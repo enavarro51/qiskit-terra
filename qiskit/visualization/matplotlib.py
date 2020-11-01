@@ -790,7 +790,10 @@ class MatplotlibDrawer:
         prev_anc = -1
         fs = self._style['fs']
         sfs = self._style['sfs']
+        layer_coords = collections.OrderedDict()
+        layer_count = 0
         for layer in self._ops:
+            layer_count += 1
             widest_box = 0.0
             #
             # compute the layer_width for this layer
@@ -845,6 +848,7 @@ class MatplotlibDrawer:
             #
             # draw the gates in this layer
             #
+            has_barrier = False
             for op in layer:
                 base_name = None if not hasattr(op.op, 'base_gate') else op.op.base_gate.name
                 gate_text, ctrl_text = self._get_gate_ctrl_text(op)
@@ -885,8 +889,13 @@ class MatplotlibDrawer:
                 qreg_b = min(q_xy, key=lambda xy: xy[1])
                 qreg_t = max(q_xy, key=lambda xy: xy[1])
 
-                # update index based on the value from plotting
+                # update index based on the value from plotting and load the x-coord
+                # of this layer for displaying layer numbers at the end
                 this_anc = q_anchors[q_idxs[0]].gate_anchor
+                if op.name in [*_barrier_gates, 'measure']:
+                    has_barrier = True
+                else:
+                    layer_coords[layer_count] = (q_xy[0][0], this_anc + 1)
 
                 if verbose:
                     print(op)
@@ -1038,6 +1047,8 @@ class MatplotlibDrawer:
                     self._multiqubit_gate(q_xy, fc=fc, ec=ec, gt=gt, sc=sc,
                                           text=gate_text, subtext='{}'.format(param))
 
+            if has_barrier:
+                layer_count -= 1
             # adjust the column if there have been barriers encountered, but not plotted
             barrier_offset = 0
             if not self._plot_barriers:
@@ -1067,7 +1078,7 @@ class MatplotlibDrawer:
             self._draw_regs_sub(ii, feedline_l, feedline_r)
 
         # draw anchor index number
-        if self._style['index']:
+        """if self._style['index']:
             for ii in range(max_anc):
                 if self._fold > 0:
                     x_coord = ii % self._fold + self._reg_long_text - 0.67
@@ -1076,5 +1087,18 @@ class MatplotlibDrawer:
                     x_coord = ii + self._reg_long_text - 0.67
                     y_coord = 0.7
                 self._ax.text(x_coord, y_coord, str(ii + 1), ha='center',
+                              va='center', fontsize=sfs,
+                              color=self._style['tc'], clip_on=True, zorder=PORDER_TEXT)"""
+
+        if self._style['index']:
+            for layer in layer_coords:
+                x_coord = layer_coords[layer][0]
+                if self._fold > 0:
+                    if x_coord > 0:
+                        x_coord = x_coord % self._fold
+                    y_coord = - ((layer_coords[layer][1] - 1) // self._fold) * (self._n_lines + 1) + 0.64
+                else:
+                    y_coord = 0.64
+                self._ax.text(x_coord, y_coord, str(layer), ha='center',
                               va='center', fontsize=sfs,
                               color=self._style['tc'], clip_on=True, zorder=PORDER_TEXT)
