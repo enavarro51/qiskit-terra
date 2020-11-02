@@ -895,7 +895,7 @@ class MatplotlibDrawer:
                 if op.name in [*_barrier_gates, 'measure']:
                     has_barrier = True
                 else:
-                    layer_coords[layer_count] = (q_xy[0][0], this_anc + 1)
+                    layer_coords[layer_count] = (q_xy[0][0], this_anc)
 
                 if verbose:
                     print(op)
@@ -1091,14 +1091,13 @@ class MatplotlibDrawer:
                               color=self._style['tc'], clip_on=True, zorder=PORDER_TEXT)"""
 
         if self._style['index']:
-            for layer in layer_coords:
-                x_coord = layer_coords[layer][0]
+            for layer_num in layer_coords:
+                x_coord = layer_coords[layer_num][0]
+                y_coord = 0.64
                 if self._fold > 0:
                     if x_coord > 0:
                         x_coord = x_coord % self._fold
-                    y_coord = - ((layer_coords[layer][1] - 1) // self._fold) * (self._n_lines + 1) + 0.64
-                else:
-                    y_coord = 0.64
-                self._ax.text(x_coord, y_coord, str(layer), ha='center',
+                    y_coord -= layer_coords[layer_num][1] // self._fold * (self._n_lines + 1)
+                self._ax.text(x_coord, y_coord, str(layer_num), ha='center',
                               va='center', fontsize=sfs,
                               color=self._style['tc'], clip_on=True, zorder=PORDER_TEXT)
