@@ -19,8 +19,8 @@ Visualization functions for measurement counts.
 from collections import Counter, OrderedDict
 import functools
 import numpy as np
-from .matplotlib import HAS_MATPLOTLIB
-from .exceptions import VisualizationError
+from qiskit.visualization.circuit.matplotlib import HAS_MATPLOTLIB
+from qiskit.visualization.exceptions import VisualizationError
 
 
 def hamming_distance(str1, str2):

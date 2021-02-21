@@ -19,7 +19,7 @@ from typing import Dict, List, Tuple, Callable, Union, Any
 
 import numpy as np
 
-from qiskit.visualization.matplotlib import HAS_MATPLOTLIB
+from qiskit.visualization.circuit.matplotlib import HAS_MATPLOTLIB
 from qiskit.visualization.pulse.qcstyle import PulseStyle, SchedStyle
 from qiskit.visualization.pulse.interpolation import step_wise
 from qiskit.pulse.channels import (DriveChannel, ControlChannel,

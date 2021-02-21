@@ -22,7 +22,7 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import U1Gate, U2Gate, U3Gate, CU1Gate, CU3Gate
 
 from qiskit.tools.visualization import HAS_MATPLOTLIB, circuit_drawer
-from qiskit.visualization.circuit_visualization import _text_circuit_drawer
+from qiskit.visualization.circuit.circuit_visualization import _text_circuit_drawer
 
 from .visualization import QiskitVisualizationTestCase, path_to_diagram_reference
 

@@ -1543,5 +1543,5 @@ class DAGCircuit:
             Ipython.display.Image: if in Jupyter notebook and not saving to file,
             otherwise None.
         """
-        from qiskit.visualization.dag_visualization import dag_drawer
+        from qiskit.visualization.plots_visualizations.dag_visualization import dag_drawer
         return dag_drawer(dag=self, scale=scale, filename=filename, style=style)

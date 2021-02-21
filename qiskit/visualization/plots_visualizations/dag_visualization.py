@@ -20,7 +20,7 @@ import os
 import sys
 import tempfile
 
-from .exceptions import VisualizationError
+from qiskit.visualization.exceptions import VisualizationError
 
 try:
     from PIL import Image

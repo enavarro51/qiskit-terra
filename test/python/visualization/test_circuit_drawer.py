@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from qiskit import QuantumCircuit
 from qiskit.test import QiskitTestCase
+from qiskit.visualization.circuit.circuit_visualization import circuit_drawer
 from qiskit import visualization
 from qiskit.visualization import text
 
@@ -30,7 +31,7 @@ class TestCircuitDrawer(QiskitTestCase):
         with patch('qiskit.user_config.get_config',
                    return_value={}):
             circuit = QuantumCircuit()
-            out = visualization.circuit_drawer(circuit)
+            out = circuit_drawer(circuit)
             self.assertIsInstance(out, text.TextDrawing)
 
     @unittest.skipUnless(visualization.HAS_MATPLOTLIB,
@@ -39,14 +40,14 @@ class TestCircuitDrawer(QiskitTestCase):
         with patch('qiskit.user_config.get_config',
                    return_value={'circuit_drawer': 'mpl'}):
             circuit = QuantumCircuit()
-            out = visualization.circuit_drawer(circuit)
+            out = circuit_drawer(circuit)
             self.assertIsInstance(out, figure.Figure)
 
     def test_default_output_with_user_config_not_set(self):
         with patch('qiskit.user_config.get_config',
                    return_value={'other_option': True}):
             circuit = QuantumCircuit()
-            out = visualization.circuit_drawer(circuit)
+            out = circuit_drawer(circuit)
             self.assertIsInstance(out, text.TextDrawing)
 
     @unittest.skipUnless(visualization.HAS_MATPLOTLIB,
@@ -55,7 +56,7 @@ class TestCircuitDrawer(QiskitTestCase):
         with patch('qiskit.user_config.get_config',
                    return_value={'circuit_drawer': 'latex'}):
             circuit = QuantumCircuit()
-            out = visualization.circuit_drawer(circuit, output='mpl')
+            out = circuit_drawer(circuit, output='mpl')
             self.assertIsInstance(out, figure.Figure)
 
     @unittest.skipUnless(visualization.HAS_MATPLOTLIB,
@@ -64,16 +65,16 @@ class TestCircuitDrawer(QiskitTestCase):
         with patch('qiskit.user_config.get_config',
                    return_value={'circuit_drawer': 'auto'}):
             circuit = QuantumCircuit()
-            out = visualization.circuit_drawer(circuit)
+            out = circuit_drawer(circuit)
             self.assertIsInstance(out, figure.Figure)
 
     def test_default_backend_auto_output_without_mpl(self):
         with patch('qiskit.user_config.get_config',
                    return_value={'circuit_drawer': 'auto'}):
             with patch.object(
-                    visualization.circuit_visualization, '_matplotlib',
+                    visualization.circuit.circuit_visualization, '_matplotlib',
                     autospec=True) as mpl_mock:
                 mpl_mock.HAS_MATPLOTLIB = False
                 circuit = QuantumCircuit()
-                out = visualization.circuit_drawer(circuit)
+                out = circuit_drawer(circuit)
                 self.assertIsInstance(out, text.TextDrawing)

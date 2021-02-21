@@ -27,7 +27,7 @@ from qiskit.circuit.library.standard_gates import IGate, RZZGate, SwapGate, SXGa
 from qiskit.extensions import UnitaryGate, HamiltonianGate
 from qiskit.extensions.quantum_initializer.initializer import Initialize
 from qiskit.circuit.tools.pi_check import pi_check
-from .exceptions import VisualizationError
+from qiskit.visualization.exceptions import VisualizationError
 
 
 class TextDrawerCregBundle(VisualizationError):

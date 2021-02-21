@@ -39,10 +39,10 @@ except ImportError:
 
 from qiskit import user_config
 from qiskit.visualization import exceptions
-from qiskit.visualization import latex as _latex
-from qiskit.visualization import text as _text
-from qiskit.visualization import utils
-from qiskit.visualization import matplotlib as _matplotlib
+from qiskit.visualization.circuit import latex as _latex
+from qiskit.visualization.circuit import text as _text
+from qiskit.visualization.tools import utils
+from qiskit.visualization.circuit import matplotlib as _matplotlib
 
 logger = logging.getLogger(__name__)
 
@@ -97,8 +97,8 @@ def circuit_drawer(circuit,
             The search path for style json files can be specified in the user
             config, for example,
             ``circuit_mpl_style_path = /home/user/styles:/home/user``.
-            See: :class:`~qiskit.visualization.qcstyle.DefaultStyle` for more
-            information on the contents.
+            See: :class:`~qiskit.visualization.circuit.qcstyle.DefaultStyle` for
+            more information on the contents.
         output (str): select the output method to use for drawing the circuit.
             Valid choices are ``text``, ``mpl``, ``latex``, ``latex_source``.
             By default the `text` drawer is used unless the user config file
@@ -166,7 +166,7 @@ def circuit_drawer(circuit,
         .. jupyter-execute::
 
             from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
-            from qiskit.tools.visualization import circuit_drawer
+            from qiskit.visualization import circuit_drawer
             q = QuantumRegister(1)
             c = ClassicalRegister(1)
             qc = QuantumCircuit(q, c)

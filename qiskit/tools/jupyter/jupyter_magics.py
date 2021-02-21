@@ -27,7 +27,7 @@ except ImportError:
     raise ImportError('These functions  need ipywidgets. '
                       'Run "pip install ipywidgets" before.')
 import qiskit
-from qiskit.visualization.matplotlib import HAS_MATPLOTLIB
+from qiskit.visualization.circuit.matplotlib import HAS_MATPLOTLIB
 from qiskit.tools.events.progressbar import TextProgressBar
 from .progressbar import HTMLProgressBar
 from .library import circuit_library_widget

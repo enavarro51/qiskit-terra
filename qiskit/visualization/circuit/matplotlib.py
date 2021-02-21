@@ -32,7 +32,7 @@ except ImportError:
     HAS_PYLATEX = False
 
 from qiskit.circuit import ControlledGate, Gate, Instruction
-from qiskit.visualization.qcstyle import DefaultStyle, set_style
+from qiskit.visualization.circuit.qcstyle import DefaultStyle, set_style
 from qiskit.circuit import Delay
 from qiskit import user_config
 from qiskit.circuit.tools.pi_check import pi_check

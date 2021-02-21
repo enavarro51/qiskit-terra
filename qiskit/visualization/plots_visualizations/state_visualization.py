@@ -24,11 +24,11 @@ import numpy as np
 from scipy import linalg
 from qiskit import user_config
 from qiskit.quantum_info.states.densitymatrix import DensityMatrix
-from qiskit.visualization.array import _matrix_to_latex
+from qiskit.visualization.tools.array import _matrix_to_latex
 from qiskit.utils.deprecation import deprecate_arguments
-from qiskit.visualization.matplotlib import HAS_MATPLOTLIB
+from qiskit.visualization.circuit.matplotlib import HAS_MATPLOTLIB
 from qiskit.visualization.exceptions import VisualizationError
-from qiskit.visualization.utils import _bloch_multivector_data, _paulivec_data
+from qiskit.visualization.tools.utils import _bloch_multivector_data, _paulivec_data
 from qiskit.circuit.tools.pi_check import pi_check
 
 
@@ -193,7 +193,7 @@ def plot_bloch_vector(bloch, title="", ax=None, figsize=None, coord_type="cartes
     if not HAS_MATPLOTLIB:
         raise ImportError('Must have Matplotlib installed. To install, run '
                           '"pip install matplotlib".')
-    from qiskit.visualization.bloch import Bloch
+    from qiskit.visualization.plots_visualizations.bloch import Bloch
     from matplotlib import get_backend
     from matplotlib import pyplot as plt
 

@@ -22,7 +22,7 @@ from qiskit.pulse.channels import Channel
 from qiskit.visualization.pulse.qcstyle import PulseStyle, SchedStyle
 from qiskit.visualization.exceptions import VisualizationError
 from qiskit.visualization.pulse import matplotlib as _matplotlib
-from qiskit.visualization.matplotlib import HAS_MATPLOTLIB
+from qiskit.visualization.circuit.matplotlib import HAS_MATPLOTLIB
 
 
 def pulse_drawer(data: Union[Waveform, Union[Schedule, Instruction]],

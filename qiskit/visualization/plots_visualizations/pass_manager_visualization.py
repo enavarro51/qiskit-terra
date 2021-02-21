@@ -25,7 +25,7 @@ try:
 except ImportError:
     HAS_PIL = False
 
-from qiskit.visualization import utils
+from qiskit.visualization.tools import utils
 from qiskit.visualization.exceptions import VisualizationError
 from qiskit.transpiler.basepasses import AnalysisPass, TransformationPass
 

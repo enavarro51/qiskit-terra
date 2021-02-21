@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2018.
+# (C) Copyright IBM 2017, 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -48,7 +48,7 @@ Circuit Visualizations
    :toctree: ../stubs/
 
    circuit_drawer
-   ~qiskit.visualization.qcstyle.DefaultStyle
+   ~qiskit.visualization.circuit.qcstyle.DefaultStyle
 
 DAG Visualizations
 ==================
@@ -56,7 +56,7 @@ DAG Visualizations
 .. autosummary::
    :toctree: ../stubs/
 
-   dag_drawer
+   ~qiskit.visualization.plots_visualizations.dag_drawer
 
 Pass Manager Visualizations
 ===========================
@@ -106,33 +106,31 @@ Exceptions
 import os
 import sys
 
-from qiskit.visualization.counts_visualization import plot_histogram
-from qiskit.visualization.state_visualization import (plot_state_hinton,
-                                                      plot_bloch_vector,
-                                                      plot_bloch_multivector,
-                                                      plot_state_city,
-                                                      plot_state_paulivec,
-                                                      plot_state_qsphere)
-from qiskit.visualization.transition_visualization import visualize_transition
-from qiskit.visualization.latex import array_to_latex
+from .circuit.circuit_visualization import circuit_drawer
+from .circuit import text
+from .circuit import matplotlib
+from .circuit import latex
+from .circuit.matplotlib import HAS_MATPLOTLIB
 
-from .circuit_visualization import circuit_drawer
-from .dag_visualization import dag_drawer
-from .exceptions import VisualizationError
-from .gate_map import plot_gate_map, plot_circuit_layout, plot_error_map
-from .matplotlib import HAS_MATPLOTLIB
-from .pass_manager_visualization import pass_manager_drawer
+from .plots_visualizations.counts_visualization import plot_histogram
+from .plots_visualizations.state_visualization import (plot_state_hinton,
+                                                       plot_bloch_vector,
+                                                       plot_bloch_multivector,
+                                                       plot_state_city,
+                                                       plot_state_paulivec,
+                                                       plot_state_qsphere,
+                                                       state_drawer)
+from .plots_visualizations.transition_visualization import visualize_transition
+from .plots_visualizations.dag_visualization import dag_drawer
+from .plots_visualizations.gate_map import plot_gate_map, plot_circuit_layout, plot_error_map
+from .plots_visualizations.pass_manager_visualization import pass_manager_drawer
+
 from .pulse.interpolation import step_wise, linear, cubic_spline
 from .pulse.qcstyle import PulseStyle, SchedStyle
-from .pulse_visualization import pulse_drawer
+from .pulse.pulse_visualization import pulse_drawer
 from .pulse_v2 import draw as pulse_drawer_v2
-from .timeline import draw as timeline_drawer
 
-if (('ipykernel' in sys.modules) and ('spyder' not in sys.modules)) \
-        or os.getenv('QISKIT_DOCS') == 'TRUE':
-    from qiskit.visualization.interactive import (iplot_bloch_multivector,
-                                                  iplot_state_city,
-                                                  iplot_state_qsphere,
-                                                  iplot_state_hinton,
-                                                  iplot_histogram,
-                                                  iplot_state_paulivec)
+from .timeline import draw as timeline_drawer
+from .tools import utils, array
+from .tools.array import array_to_latex
+from .exceptions import VisualizationError

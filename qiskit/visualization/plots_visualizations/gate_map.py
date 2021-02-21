@@ -15,8 +15,8 @@
 import math
 import numpy as np
 from qiskit.exceptions import QiskitError
-from .matplotlib import HAS_MATPLOTLIB
-from .exceptions import VisualizationError
+from qiskit.visualization import HAS_MATPLOTLIB
+from qiskit.visualization.exceptions import VisualizationError
 
 
 class _GraphDist():

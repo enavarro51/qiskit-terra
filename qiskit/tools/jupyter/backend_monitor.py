@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt                         # pylint: disable=import
 from matplotlib.patches import Circle                   # pylint: disable=import-error
 import ipywidgets as widgets                            # pylint: disable=import-error
 from qiskit.exceptions import QiskitError
-from qiskit.visualization.gate_map import plot_gate_map, plot_error_map
+from qiskit.visualization import plot_gate_map, plot_error_map
 from qiskit.test.mock import FakeBackend
 
 try:
