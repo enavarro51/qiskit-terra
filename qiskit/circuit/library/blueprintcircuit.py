@@ -85,6 +85,9 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qregs = qregs
         self._qubits = [qbit for qreg in qregs for qbit in qreg]
         self._qubit_set = set(self._qubits)
+        for qreg in qregs:
+            if qreg.name not in self._data_dag.qregs:
+                self._data_dag.add_qreg(qreg)
         self._invalidate()
 
     @property

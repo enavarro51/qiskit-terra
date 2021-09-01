@@ -236,6 +236,12 @@ class QuantumCircuit:
         # in the order they were applied.
         self._data = []
 
+        # Data dag
+        from qiskit.dagcircuit import DAGCircuit
+
+        self._data_dag = DAGCircuit()
+        self._dag_index_map = {}
+
         # This is a map of registers bound to this circuit, by name.
         self.qregs = []
         self.cregs = []
@@ -294,6 +300,10 @@ class QuantumCircuit:
         # below will also empty data_input, so make a shallow copy first.
         data_input = data_input.copy()
         self._data = []
+        from qiskit.dagcircuit import DAGCircuit
+
+        self._data_dag = DAGCircuit()
+        self._dag_index_map = {}
         self._parameter_table = ParameterTable()
 
         for inst, qargs, cargs in data_input:
@@ -863,6 +873,7 @@ class QuantumCircuit:
             dest._data = mapped_instrs + dest._data
         else:
             dest._data += mapped_instrs
+            dest._data_dag.compose(other._data_dag, front=False, inplace=True)
 
         if front:
             dest._parameter_table.clear()
@@ -1197,6 +1208,18 @@ class QuantumCircuit:
         # add the instruction onto the given wires
         instruction_context = instruction, qargs, cargs
         self._data.append(instruction_context)
+        if instruction.condition is not None:
+            if (hasattr(instruction.condition[0], "name")
+                    and instruction.condition[0].name not in self._data_dag.cregs):
+                self._data_dag.add_creg(instruction.condition[0])
+
+        for qarg in qargs:
+            if qarg not in self._data_dag.qubits:
+                self._data_dag.add_qubits([qarg])
+        for carg in cargs:
+            if carg not in self._data_dag.clbits:
+                self._data_dag.add_clbits([carg])
+        self._data_dag.apply_operation_back(*instruction_context)
 
         self._update_parameter_table(instruction)
 
@@ -1283,11 +1306,15 @@ class QuantumCircuit:
 
             if isinstance(register, QuantumRegister):
                 self.qregs.append(register)
+                if register.name not in self._data_dag.qregs:
+                    self._data_dag.add_qreg(register)
                 new_bits = [bit for bit in register if bit not in self._qubit_set]
                 self._qubits.extend(new_bits)
                 self._qubit_set.update(new_bits)
             elif isinstance(register, ClassicalRegister):
                 self.cregs.append(register)
+                if register.name not in self._data_dag.cregs:
+                    self._data_dag.add_creg(register)
                 new_bits = [bit for bit in register if bit not in self._clbit_set]
                 self._clbits.extend(new_bits)
                 self._clbit_set.update(new_bits)
@@ -1309,9 +1336,11 @@ class QuantumCircuit:
             if isinstance(bit, Qubit):
                 self._qubits.append(bit)
                 self._qubit_set.add(bit)
+                self._data_dag.add_qubits([bit])
             elif isinstance(bit, Clbit):
                 self._clbits.append(bit)
                 self._clbit_set.add(bit)
+                self._data_dag.add_clbits([bit])
             else:
                 raise CircuitError(
                     "Expected an instance of Qubit, Clbit, or "
@@ -2026,6 +2055,7 @@ class QuantumCircuit:
             (instr_copies[id(inst)], qargs.copy(), cargs.copy())
             for inst, qargs, cargs in self._data
         ]
+        cpy._data_dag = copy.copy(self._data_dag)
 
         cpy._calibrations = copy.deepcopy(self._calibrations)
         cpy._metadata = copy.deepcopy(self._metadata)
