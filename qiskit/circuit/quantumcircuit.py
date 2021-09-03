@@ -1219,7 +1219,7 @@ class QuantumCircuit:
         for carg in cargs:
             if carg not in self._data_dag.clbits:
                 self._data_dag.add_clbits([carg])
-        self._data_dag.apply_operation_back(*instruction_context)
+        self._data_dag.apply_operation_back(instruction, qargs, cargs)#*instruction_context)
 
         self._update_parameter_table(instruction)
 

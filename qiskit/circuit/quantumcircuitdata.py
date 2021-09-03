@@ -55,7 +55,7 @@ class QuantumCircuitData(MutableSequence):
         self._circuit._check_cargs(cargs)
 
         self._circuit._data[key] = (instruction, qargs, cargs)
-        self._circuit._data_dag.apply_operation_back(instruction, qargs, cargs)
+        self._circuit._data_dag.apply_operation_back(instruction.copy(), qargs, cargs)
 
         self._circuit._update_parameter_table(instruction)
 

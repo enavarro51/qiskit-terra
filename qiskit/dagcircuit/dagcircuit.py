@@ -984,7 +984,7 @@ class DAGCircuit:
         Returns:
             generator(DAGOpNode): op node in topological order
         """
-        def _key(x):
+        """def _key(x):
             return x.sort_key
 
         nodes = rx.lexicographical_topological_sort(self._multi_graph,
@@ -992,8 +992,8 @@ class DAGCircuit:
         if reverse:
             return (nd for nd in reversed(nodes) if isinstance(nd, DAGOpNode))
         else:
-            return (nd for nd in nodes if isinstance(nd, DAGOpNode))
-        #return (nd for nd in self.topological_nodes() if isinstance(nd, DAGOpNode))
+            return (nd for nd in nodes if isinstance(nd, DAGOpNode))"""
+        return (nd for nd in self.topological_nodes() if isinstance(nd, DAGOpNode))
 
     def substitute_node_with_dag(self, node, input_dag, wires=None):
         """Replace one node with dag.
