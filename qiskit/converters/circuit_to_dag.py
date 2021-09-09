@@ -48,8 +48,8 @@ def circuit_to_dag(circuit):
     dagcircuit = copy.deepcopy(circuit._data_dag)
     #if circuit._data_dag.cregs == circuit.cregs:
     #    print("Cregs match")
-    print(circuit.qubits)
-    print(circuit._data_dag.qubits)
+    #print(circuit.qubits)
+    #print(circuit._data_dag.qubits)
     dagcircuit.name = circuit.name
     dagcircuit.global_phase = circuit.global_phase
     dagcircuit.calibrations = circuit.calibrations
