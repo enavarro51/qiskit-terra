@@ -45,7 +45,8 @@ def circuit_to_dag(circuit):
             dag = circuit_to_dag(circ)
             dag_drawer(dag)
     """
-    dagcircuit = copy.deepcopy(circuit._data_dag)
+    dagcircuit = DAGCircuit()
+    #dagcircuit = copy.deepcopy(circuit._data_dag)
     #if circuit._data_dag.cregs == circuit.cregs:
     #    print("Cregs match")
     #print(circuit.qubits)
@@ -57,7 +58,7 @@ def circuit_to_dag(circuit):
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit
 
-    """dagcircuit.add_qubits(circuit.qubits)
+    dagcircuit.add_qubits(circuit.qubits)
     dagcircuit.add_clbits(circuit.clbits)
 
     for register in circuit.qregs:
@@ -68,6 +69,5 @@ def circuit_to_dag(circuit):
 
     for instruction, qargs, cargs in circuit.data:
         dagcircuit.apply_operation_back(instruction.copy(), qargs, cargs)
-    """
     return dagcircuit
     #return copy.copy(circuit._data_dag)

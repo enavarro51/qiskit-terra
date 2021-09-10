@@ -307,6 +307,14 @@ class QuantumCircuit:
         self._parameter_table = ParameterTable()
 
         for inst, qargs, cargs in data_input:
+            print("\n\n", qargs)
+            print(cargs)
+            duplicate_qubits = set(self._data_dag.qubits).intersection(qargs)
+            if not duplicate_qubits:
+                self._data_dag.add_qubits(qargs)
+            duplicate_clbits = set(self._data_dag.clbits).intersection(cargs)
+            if not duplicate_clbits:
+                self._data_dag.add_clbits(cargs)
             self.append(inst, qargs, cargs)
 
     @property
@@ -873,7 +881,9 @@ class QuantumCircuit:
             dest._data = mapped_instrs + dest._data
         else:
             dest._data += mapped_instrs
-            dest._data_dag.compose(other._data_dag, front=False, inplace=True)
+            #dest._data_dag.compose(other._data_dag, qubits=n_qargs, clbits=n_cargs, front=False, inplace=True)
+            for inst, qargs, cargs in mapped_instrs:
+                dest._data_dag.apply_operation_back(inst, qargs, cargs)
 
         if front:
             dest._parameter_table.clear()
@@ -1213,13 +1223,7 @@ class QuantumCircuit:
                     and instruction.condition[0].name not in self._data_dag.cregs):
                 self._data_dag.add_creg(instruction.condition[0])
 
-        for qarg in qargs:
-            if qarg not in self._data_dag.qubits:
-                self._data_dag.add_qubits([qarg])
-        for carg in cargs:
-            if carg not in self._data_dag.clbits:
-                self._data_dag.add_clbits([carg])
-        self._data_dag.apply_operation_back(instruction, qargs, cargs)#*instruction_context)
+        self._data_dag.apply_operation_back(instruction, qargs, cargs)
 
         self._update_parameter_table(instruction)
 
@@ -1306,18 +1310,22 @@ class QuantumCircuit:
 
             if isinstance(register, QuantumRegister):
                 self.qregs.append(register)
-                if register.name not in self._data_dag.qregs:
-                    self._data_dag.add_qreg(register)
+                self._data_dag.qregs[register.name] = register
                 new_bits = [bit for bit in register if bit not in self._qubit_set]
                 self._qubits.extend(new_bits)
                 self._qubit_set.update(new_bits)
+                duplicate_qubits = set(self._data_dag.qubits).intersection(new_bits)
+                if not duplicate_qubits:
+                    self._data_dag.add_qubits(new_bits)
             elif isinstance(register, ClassicalRegister):
                 self.cregs.append(register)
-                if register.name not in self._data_dag.cregs:
-                    self._data_dag.add_creg(register)
+                self._data_dag.qregs[register.name] = register
                 new_bits = [bit for bit in register if bit not in self._clbit_set]
                 self._clbits.extend(new_bits)
                 self._clbit_set.update(new_bits)
+                duplicate_clbits = set(self._data_dag.clbits).intersection(new_bits)
+                if not duplicate_clbits:
+                    self._data_dag.add_clbits(new_bits)
             elif isinstance(register, list):
                 self.add_bits(register)
             else:
