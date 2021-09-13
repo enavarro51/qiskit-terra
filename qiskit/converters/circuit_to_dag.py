@@ -67,5 +67,7 @@ def circuit_to_dag(circuit):
     return dagcircuit
     """
 
-    dagcircuit = copy.deepcopy(circuit._data_dag)
+    dagcircuit = copy.copy(circuit._data_dag)
+    for node in circuit._data_dag.topological_op_nodes():
+        circuit._data_dag.substitute_node(node, node.op.copy())
     return dagcircuit
