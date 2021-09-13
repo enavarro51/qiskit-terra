@@ -45,13 +45,8 @@ def circuit_to_dag(circuit):
             dag = circuit_to_dag(circ)
             dag_drawer(dag)
     """
+    """
     dagcircuit = DAGCircuit()
-    #dagcircuit = copy.deepcopy(circuit._data_dag)
-    #if circuit._data_dag.cregs == circuit.cregs:
-    #    print("Cregs match")
-    #print(circuit.qubits)
-    #print(circuit._data_dag.qubits)
-    dagcircuit.name = circuit.name
     dagcircuit.global_phase = circuit.global_phase
     dagcircuit.calibrations = circuit.calibrations
     dagcircuit.metadata = circuit.metadata
@@ -66,8 +61,11 @@ def circuit_to_dag(circuit):
 
     for register in circuit.cregs:
         dagcircuit.add_creg(register)
-
+    
     for instruction, qargs, cargs in circuit.data:
         dagcircuit.apply_operation_back(instruction.copy(), qargs, cargs)
     return dagcircuit
-    #return copy.copy(circuit._data_dag)
+    """
+
+    dagcircuit = copy.deepcopy(circuit._data_dag)
+    return dagcircuit

@@ -300,21 +300,11 @@ class QuantumCircuit:
         # below will also empty data_input, so make a shallow copy first.
         data_input = data_input.copy()
         self._data = []
-        from qiskit.dagcircuit import DAGCircuit
-
-        self._data_dag = DAGCircuit()
-        self._dag_index_map = {}
+        for node in self._data_dag.topological_op_nodes():
+            self._data_dag.remove_op_node(node)
         self._parameter_table = ParameterTable()
 
         for inst, qargs, cargs in data_input:
-            print("\n\n", qargs)
-            print(cargs)
-            duplicate_qubits = set(self._data_dag.qubits).intersection(qargs)
-            if not duplicate_qubits:
-                self._data_dag.add_qubits(qargs)
-            duplicate_clbits = set(self._data_dag.clbits).intersection(cargs)
-            if not duplicate_clbits:
-                self._data_dag.add_clbits(cargs)
             self.append(inst, qargs, cargs)
 
     @property
@@ -881,9 +871,7 @@ class QuantumCircuit:
             dest._data = mapped_instrs + dest._data
         else:
             dest._data += mapped_instrs
-            #dest._data_dag.compose(other._data_dag, qubits=n_qargs, clbits=n_cargs, front=False, inplace=True)
-            for inst, qargs, cargs in mapped_instrs:
-                dest._data_dag.apply_operation_back(inst, qargs, cargs)
+            dest._data_dag.compose(other._data_dag, qubits=qubits, clbits=clbits, front=False, inplace=True)
 
         if front:
             dest._parameter_table.clear()
@@ -1155,7 +1143,7 @@ class QuantumCircuit:
             cargs (list(argument)): clbits to attach instruction to
 
         Returns:
-            qiskit.circuit.Instruction: a handle to the instruction that was just added
+            qiskit.circuit.InstructionSet: a handle to the instructionSet that was just added
 
         Raises:
             CircuitError: if object passed is a subclass of Instruction
@@ -1314,18 +1302,18 @@ class QuantumCircuit:
                 new_bits = [bit for bit in register if bit not in self._qubit_set]
                 self._qubits.extend(new_bits)
                 self._qubit_set.update(new_bits)
-                duplicate_qubits = set(self._data_dag.qubits).intersection(new_bits)
-                if not duplicate_qubits:
-                    self._data_dag.add_qubits(new_bits)
+                for bit in new_bits:
+                    if bit not in self._data_dag.qubits:
+                        self._data_dag.add_qubits([bit])
             elif isinstance(register, ClassicalRegister):
                 self.cregs.append(register)
-                self._data_dag.qregs[register.name] = register
+                self._data_dag.cregs[register.name] = register
                 new_bits = [bit for bit in register if bit not in self._clbit_set]
                 self._clbits.extend(new_bits)
                 self._clbit_set.update(new_bits)
-                duplicate_clbits = set(self._data_dag.clbits).intersection(new_bits)
-                if not duplicate_clbits:
-                    self._data_dag.add_clbits(new_bits)
+                for bit in new_bits:
+                    if bit not in self._data_dag.clbits:
+                        self._data_dag.add_clbits([bit])
             elif isinstance(register, list):
                 self.add_bits(register)
             else:
@@ -2059,7 +2047,7 @@ class QuantumCircuit:
             (instr_copies[id(inst)], qargs.copy(), cargs.copy())
             for inst, qargs, cargs in self._data
         ]
-        cpy._data_dag = copy.copy(self._data_dag)
+        cpy._data_dag = copy.deepcopy(self._data_dag)
 
         cpy._calibrations = copy.deepcopy(self._calibrations)
         cpy._metadata = copy.deepcopy(self._metadata)
