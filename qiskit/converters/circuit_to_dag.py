@@ -45,13 +45,12 @@ def circuit_to_dag(circuit):
             dag = circuit_to_dag(circ)
             dag_drawer(dag)
     """
-    """
+    
     dagcircuit = DAGCircuit()
+    dagcircuit.name = circuit.name
     dagcircuit.global_phase = circuit.global_phase
     dagcircuit.calibrations = circuit.calibrations
     dagcircuit.metadata = circuit.metadata
-    dagcircuit.duration = circuit.duration
-    dagcircuit.unit = circuit.unit
 
     dagcircuit.add_qubits(circuit.qubits)
     dagcircuit.add_clbits(circuit.clbits)
@@ -61,13 +60,24 @@ def circuit_to_dag(circuit):
 
     for register in circuit.cregs:
         dagcircuit.add_creg(register)
-    
+
     for instruction, qargs, cargs in circuit.data:
         dagcircuit.apply_operation_back(instruction.copy(), qargs, cargs)
-    return dagcircuit
-    """
 
-    dagcircuit = copy.copy(circuit._data_dag)
-    for node in circuit._data_dag.topological_op_nodes():
-        circuit._data_dag.substitute_node(node, node.op.copy())
+    dagcircuit.duration = circuit.duration
+    dagcircuit.unit = circuit.unit
+
+    
+    dagcircuit1 = copy.copy(circuit._data_dag)
+    for node in dagcircuit1.topological_op_nodes():
+        dagcircuit1.substitute_node(node, node.op.copy())
+    if dagcircuit != dagcircuit1:
+        print("\n\n", dagcircuit.count_ops())
+        print("\n", dagcircuit1.count_ops(), "\n")
+        for node in dagcircuit.topological_op_nodes():
+            if hasattr(node.op, "params"):
+                print("\n", node.op.params)
+        for node in dagcircuit1.topological_op_nodes():
+            if hasattr(node.op, "params"):
+                print("\nCIRC1", node.op.params, "\n")
     return dagcircuit
