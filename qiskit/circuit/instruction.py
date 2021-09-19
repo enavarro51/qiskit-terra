@@ -349,9 +349,10 @@ class Instruction:
             return self.copy()
 
         reverse_inst = self.copy(name=self.name + "_reverse")
-        reverse_inst.definition._data = [
-            (inst.reverse_ops(), qargs, cargs) for inst, qargs, cargs in reversed(self._definition)
-        ]
+        #reverse_inst.definition._data.topological_op_nodes() = [
+        #    (node.op, node.qargs, cargs) for node in self._definition._data.reverse_ops()
+        #]
+        reverse_inst._definition = self._definition.reverse_ops()
 
         return reverse_inst
 

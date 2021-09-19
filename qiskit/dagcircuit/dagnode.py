@@ -320,13 +320,14 @@ class DAGNode:
 class DAGOpNode(DAGNode):
     """Object to represent an Instruction at a node in the DAGCircuit."""
 
-    __slots__ = ["_type", "op", "qargs", "cargs", "sort_key"]
+    __slots__ = ["_type", "op", "op_idx", "qargs", "cargs", "sort_key"]
 
     def __init__(self, op, qargs=None, cargs=None):
         """Create an Instruction node"""
         super().__init__()
         self._type = "op"  # Remove when DAGNode.type is removed
         self.op = op
+        self.op_idx = 0
         self.qargs = qargs
         self.cargs = cargs
         self.sort_key = str(self.qargs)

@@ -61,14 +61,17 @@ def circuit_to_dag(circuit):
     for register in circuit.cregs:
         dagcircuit.add_creg(register)
 
-    for instruction, qargs, cargs in circuit.data:
-        dagcircuit.apply_operation_back(instruction.copy(), qargs, cargs)
+    for node in circuit._op_idx_map.values():#_data.topological_op_nodes():#instruction, qargs, cargs in circuit.data:
+        dagcircuit.apply_operation_back(node.op, node.qargs, node.cargs)
+        #print(node, node.op)
+        #dagcircuit.substitute_node(node, node.op.copy())
+        #dagcircuit.apply_operation_back(instruction.copy(), qargs, cargs)
 
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit
 
-    
-    dagcircuit1 = copy.copy(circuit._data_dag)
+    """
+    dagcircuit = copy.deepcopy(circuit._data)
     for node in dagcircuit1.topological_op_nodes():
         dagcircuit1.substitute_node(node, node.op.copy())
     if dagcircuit != dagcircuit1:
@@ -80,4 +83,5 @@ def circuit_to_dag(circuit):
         for node in dagcircuit1.topological_op_nodes():
             if hasattr(node.op, "params"):
                 print("\nCIRC1", node.op.params, "\n")
+    """
     return dagcircuit
