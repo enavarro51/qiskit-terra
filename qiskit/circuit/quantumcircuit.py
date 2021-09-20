@@ -240,8 +240,8 @@ class QuantumCircuit:
         from qiskit.dagcircuit import DAGCircuit
 
         self._data = DAGCircuit()
-        self._op_idx_map = {}
-        self._op_idx_curr = itertools.count()
+        self._node_idx_map = {}
+        self._node_idx_curr = itertools.count()
 
         # This is a map of registers bound to this circuit, by name.
         self.qregs = []
@@ -300,16 +300,17 @@ class QuantumCircuit:
         # If data_input is QuantumCircuitData(self), clearing self._data
         # below will also empty data_input, so make a shallow copy first.
         data_input = data_input.copy()
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             self._data.remove_op_node(node)
         self._parameter_table = ParameterTable()
 
         for inst, qargs, cargs in data_input:
-            key = next(self._op_idx_curr)
-            self._op_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
-            self._op_idx_map[key].op = inst
-            self._op_idx_map[key].qargs = qargs
-            self._op_idx_map[key].cargs = cargs
+            key = next(self._node_idx_curr)
+            print('in qc data', inst)
+            self._node_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
+            self._node_idx_map[key].op = inst
+            self._node_idx_map[key].qargs = qargs
+            self._node_idx_map[key].cargs = cargs
 
             #print('in data', id(inst))
             self._update_parameter_table(inst)
@@ -526,7 +527,7 @@ class QuantumCircuit:
             global_phase=-self.global_phase,
         )
 
-        for node in dict(list(self._op_idx_map.items())[::-1]).values():
+        for node in dict(list(self._node_idx_map.items())[::-1]).values():
             inverse_circ._append(node.op.inverse(), node.qargs, node.cargs)
         return inverse_circ
 
@@ -884,7 +885,7 @@ class QuantumCircuit:
 
         if front:
             dest._parameter_table.clear()
-        for node in dest._op_idx_map.values():
+        for node in dest._node_idx_map.values():
             #print('in data', id(node.op))
             dest._update_parameter_table(node.op)
 
@@ -1046,7 +1047,7 @@ class QuantumCircuit:
 
     def __len__(self) -> int:
         """Return number of operations in circuit."""
-        return len(self._op_idx_map)
+        return len(self._node_idx_map)
 
     @typing.overload
     def __getitem__(self, item: int) -> DataElement:
@@ -1059,7 +1060,7 @@ class QuantumCircuit:
     def __getitem__(self, item):
         """Return indexed operation."""
         try:
-            ret = (self._op_idx_map[item].op, self._op_idx_map[item].qargs, self._op_idx_map[item].cargs)
+            ret = (self._node_idx_map[item].op, self._node_idx_map[item].qargs, self._node_idx_map[item].cargs)
         except KeyError:
             #print('raising index')
             raise IndexError
@@ -1223,12 +1224,14 @@ class QuantumCircuit:
                     and instruction.condition[0].name not in self._data.cregs):
                 self._data.add_creg(instruction.condition[0])
 
+        print('in append', id(instruction), instruction)
         node = self._data.apply_operation_back(instruction, qargs, cargs)
-        idx = int(next(self._op_idx_curr))
-        self._op_idx_map[idx] = node
-        node.op_idx = idx
+        print('2', id(node), id(node.op), node.op)
+        idx = next(self._node_idx_curr)
+        self._node_idx_map[idx] = node
 
         self._update_parameter_table(instruction)
+        print('3', self._parameter_table)
         #print('in append', id(instruction))
 
         # mark as normal circuit if a new instruction is added
@@ -1591,7 +1594,7 @@ class QuantumCircuit:
                 {bit: f"{register_name}[{idx}]" for idx, bit in enumerate(regless_clbits)}
             )
 
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             instruction = node.op
             qargs = node.qargs
             cargs = node.cargs
@@ -1811,7 +1814,7 @@ class QuantumCircuit:
             int: Total number of gate operations.
         """
         gate_ops = 0
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             if not node.op._directive:
                 gate_ops += 1
         return gate_ops
@@ -1850,7 +1853,7 @@ class QuantumCircuit:
         # We treat barriers or snapshots different as
         # They are transpiler and simulator directives.
         # The max stack height is the circuit depth.
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             inst = node.op
             qargs = node.qargs
             cargs = node.cargs
@@ -1919,7 +1922,7 @@ class QuantumCircuit:
             OrderedDict: a breakdown of how many operations of each kind, sorted by amount.
         """
         count_ops: Dict[Instruction, int] = {}
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             count_ops[node.op.name] = count_ops.get(node.op.name, 0) + 1
         return OrderedDict(sorted(count_ops.items(), key=lambda kv: kv[1], reverse=True))
 
@@ -1929,7 +1932,7 @@ class QuantumCircuit:
         Conditional nonlocal gates are also included.
         """
         multi_qubit_gates = 0
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             if node.op.num_qubits > 1 and not node.op._directive:
                 multi_qubit_gates += 1
         return multi_qubit_gates
@@ -1943,7 +1946,7 @@ class QuantumCircuit:
         Returns:
             list(tuple): list of (instruction, qargs, cargs).
         """
-        return [(node.op, node.qargs, node.cargs) for node in self._op_idx_map.values() if node.op.name == name]
+        return [(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values() if node.op.name == name]
 
     def num_connected_components(self, unitary_only: bool = False) -> int:
         """How many non-entangled subcircuits can the circuit be factored to.
@@ -1965,7 +1968,7 @@ class QuantumCircuit:
 
         # Here we are traversing the gates and looking to see
         # which of the sub_graphs the gate joins together.
-        for node in self._op_idx_map.values():
+        for node in self._node_idx_map.values():
             instr = node.op
             qargs = node.qargs
             cargs = node.cargs
@@ -2058,17 +2061,20 @@ class QuantumCircuit:
         cpy._qubit_set = self._qubit_set.copy()
         cpy._clbit_set = self._clbit_set.copy()
 
-        instr_instances = {id(node.op): node.op for node in self._op_idx_map.values()}
+        print("in copy", self._parameter_table)
+        for node in self._node_idx_map.values():
+            print(id(node.op), node.op)
+        instr_instances = {id(node.op): node.op for node in self._node_idx_map.values()}
         #for xxx in instr_instances.values():
         #    print('instance', id(xxx))
 
         instr_copies = {id_: instr.copy() for id_, instr in instr_instances.items()}
-        """for xxx in instr_copies.values():
+        for xxx in instr_copies.values():
             print('copy', id(xxx))
         for param in self._parameter_table:
             print("param", param)
             for instr, param_index in self._parameter_table[param]:
-                print('id, instr in self.paramt', param_index, id(instr), instr)"""
+                print('id, instr in self.paramt', param_index, id(instr), instr)
         cpy._parameter_table = ParameterTable(
             {
                 param: [
@@ -2381,6 +2387,7 @@ class QuantumCircuit:
 
         """
         # replace in self or in a copy depending on the value of in_place
+        print('assign', self._parameter_table)
         if inplace:
             bound_circuit = self
         else:

@@ -63,7 +63,9 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         if self._data is not None:
             return
 
-        self._data = []
+        from qiskit.dagcircuit import DAGCircuit
+
+        self._data = DAGCircuit()
 
         # check whether the configuration is valid
         self._check_configuration()
@@ -85,11 +87,11 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qregs = qregs
         self._qubits = [qbit for qreg in qregs for qbit in qreg]
         for qubit in self._qubits:
-            if qubit not in self._data.qubits:
+            if self._data and qubit not in self._data.qubits:
                 self._data.add_qubits([qubit])
         self._qubit_set = set(self._qubits)
         for qreg in qregs:
-            if qreg.name not in self._data.qregs:
+            if self._data and qreg.name not in self._data.qregs:
                 self._data.add_qreg(qreg)
         self._invalidate()
 

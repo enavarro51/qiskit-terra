@@ -61,7 +61,7 @@ def circuit_to_dag(circuit):
     for register in circuit.cregs:
         dagcircuit.add_creg(register)
 
-    for node in circuit._op_idx_map.values():#_data.topological_op_nodes():#instruction, qargs, cargs in circuit.data:
+    for node in circuit._node_idx_map.values():#_data.topological_op_nodes():#instruction, qargs, cargs in circuit.data:
         dagcircuit.apply_operation_back(node.op, node.qargs, node.cargs)
         #print(node, node.op)
         #dagcircuit.substitute_node(node, node.op.copy())
@@ -69,9 +69,10 @@ def circuit_to_dag(circuit):
 
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit
-
     """
-    dagcircuit = copy.deepcopy(circuit._data)
+    dagcircuit = copy.copy(circuit._data)
+    for node in circuit._node_idx_map.values():
+        dagcircuit.substitute_node(node, node.op.copy())
     for node in dagcircuit1.topological_op_nodes():
         dagcircuit1.substitute_node(node, node.op.copy())
     if dagcircuit != dagcircuit1:

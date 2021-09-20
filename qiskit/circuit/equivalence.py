@@ -58,7 +58,7 @@ class EquivalenceLibrary:
             equivalent_circuit (QuantumCircuit): A circuit equivalently
                 implementing the given Gate.
         """
-
+        print("ADDING", gate)
         _raise_if_shape_mismatch(gate, equivalent_circuit)
         _raise_if_param_mismatch(gate.params, equivalent_circuit.parameters)
 

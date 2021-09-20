@@ -28,7 +28,7 @@ class QuantumCircuitData(MutableSequence):
 
     def __getitem__(self, i):
         try:
-            ret = (self._circuit._op_idx_map[i].op, self._circuit._op_idx_map[i].qargs, self._circuit._op_idx_map[i].cargs)
+            ret = (self._circuit._node_idx_map[i].op, self._circuit._node_idx_map[i].qargs, self._circuit._node_idx_map[i].cargs)
         except KeyError:
             raise IndexError
         return ret
@@ -58,12 +58,11 @@ class QuantumCircuitData(MutableSequence):
         self._circuit._check_qargs(qargs)
         self._circuit._check_cargs(cargs)
 
-        self._circuit._op_idx_map[key].op = instruction
-        self._circuit._op_idx_map[key].qargs = qargs
-        self._circuit._op_idx_map[key].cargs = cargs
+        self._circuit._node_idx_map[key].op = instruction
+        self._circuit._node_idx_map[key].qargs = qargs
+        self._circuit._node_idx_map[key].cargs = cargs
 
         self._circuit._update_parameter_table(instruction)
-        print('in qcdata', id(instruction))
 
     def insert(self, index, value):
         #self._circuit._data.insert(index, None)
@@ -78,7 +77,7 @@ class QuantumCircuitData(MutableSequence):
         pass
 
     def __len__(self):
-        return len(self._circuit._op_idx_map)
+        return len(self._circuit._node_idx_map)
 
     def __cast(self, other):
         return other._circuit._data if isinstance(other, QuantumCircuitData) else other

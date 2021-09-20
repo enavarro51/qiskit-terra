@@ -49,11 +49,8 @@ def circuit_to_gate(circuit, parameter_map=None, equivalence_library=None, label
     if circuit.clbits:
         raise QiskitError("Circuit with classical bits cannot be converted to gate.")
 
-    for node in circuit._data.topological_op_nodes():
+    for node in circuit._node_idx_map.values():
         inst = node.op
-        #print(len(circuit.data))
-        #print(circuit._op_idx_curr, circuit._op_idx_map)
-        #print(inst)
         if not isinstance(inst, Gate):
             raise QiskitError(
                 (

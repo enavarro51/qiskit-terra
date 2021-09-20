@@ -1141,8 +1141,6 @@ class DAGCircuit:
         save_condition = new_node.op.condition
         new_node.op = op
         new_node.op.condition = save_condition
-        print('node', node._node_id, node)
-        print('new', new_node, new_node.op)
         self._multi_graph[node._node_id] = new_node
         return new_node
 
