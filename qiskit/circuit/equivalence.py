@@ -58,13 +58,29 @@ class EquivalenceLibrary:
             equivalent_circuit (QuantumCircuit): A circuit equivalently
                 implementing the given Gate.
         """
-        print("ADDING", gate)
+        #print("ADDING", gate)
         _raise_if_shape_mismatch(gate, equivalent_circuit)
         _raise_if_param_mismatch(gate.params, equivalent_circuit.parameters)
 
         key = Key(name=gate.name, num_qubits=gate.num_qubits)
+        #print('before', equivalent)
+        if gate.name == 'p':
+            for node in equivalent_circuit._node_idx_map.values():
+                print('in add before', id(node.op))
 
+            for param in equivalent_circuit._parameter_table:
+                print("param before copy", param)
+                for instr, param_index in equivalent_circuit._parameter_table[param]:
+                    print('id before copy, instr in self.paramt', param_index, id(instr), instr)
         equiv = Equivalence(params=gate.params.copy(), circuit=equivalent_circuit.copy())
+        if gate.name == 'p':
+            for param in equiv.circuit._parameter_table:
+                print("param after copy", param)
+                for instr, param_index in equiv.circuit._parameter_table[param]:
+                    print('id after copy, instr in self.paramt', param_index, id(instr), instr)
+                    for node in equiv.circuit._node_idx_map.values():
+                        node.op = instr
+                        print('in add', id(node.op))
 
         if key not in self._map:
             self._map[key] = Entry(search_base=True, equivalences=[])

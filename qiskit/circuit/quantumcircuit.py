@@ -304,15 +304,16 @@ class QuantumCircuit:
             self._data.remove_op_node(node)
         self._parameter_table = ParameterTable()
 
+        #print('in qc data', id(inst))
         for inst, qargs, cargs in data_input:
             key = next(self._node_idx_curr)
-            print('in qc data', inst)
+            #print('in qc data', id(inst))
             self._node_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
             self._node_idx_map[key].op = inst
             self._node_idx_map[key].qargs = qargs
             self._node_idx_map[key].cargs = cargs
 
-            #print('in data', id(inst))
+            print('in data2', id(inst))
             self._update_parameter_table(inst)
 
     @property
@@ -1224,14 +1225,14 @@ class QuantumCircuit:
                     and instruction.condition[0].name not in self._data.cregs):
                 self._data.add_creg(instruction.condition[0])
 
-        print('in append', id(instruction), instruction)
+        #print('in append', id(instruction), instruction)
         node = self._data.apply_operation_back(instruction, qargs, cargs)
-        print('2', id(node), id(node.op), node.op)
+        #print('2', id(node), id(node.op), node.op)
         idx = next(self._node_idx_curr)
         self._node_idx_map[idx] = node
 
         self._update_parameter_table(instruction)
-        print('3', self._parameter_table)
+        #print('3', self._parameter_table)
         #print('in append', id(instruction))
 
         # mark as normal circuit if a new instruction is added
@@ -2061,20 +2062,20 @@ class QuantumCircuit:
         cpy._qubit_set = self._qubit_set.copy()
         cpy._clbit_set = self._clbit_set.copy()
 
-        print("in copy", self._parameter_table)
-        for node in self._node_idx_map.values():
-            print(id(node.op), node.op)
+        #print("in copy", self._parameter_table)
+        #for node in self._node_idx_map.values():
+        #    print(id(node.op), node.op)
         instr_instances = {id(node.op): node.op for node in self._node_idx_map.values()}
         #for xxx in instr_instances.values():
         #    print('instance', id(xxx))
 
         instr_copies = {id_: instr.copy() for id_, instr in instr_instances.items()}
-        for xxx in instr_copies.values():
+        """for xxx in instr_copies.values():
             print('copy', id(xxx))
         for param in self._parameter_table:
             print("param", param)
             for instr, param_index in self._parameter_table[param]:
-                print('id, instr in self.paramt', param_index, id(instr), instr)
+                print('id, instr in self.paramt', param_index, id(instr), instr)"""
         cpy._parameter_table = ParameterTable(
             {
                 param: [
@@ -2089,7 +2090,13 @@ class QuantumCircuit:
             (instr_copies[id(node.op)], node.qargs.copy(), node.cargs.copy())
             for node in self._data.topological_op_nodes()
         ]"""
-        #cpy._data = copy.deepcopy(self._data)
+        cpy._data = copy.deepcopy(self._data)
+        self._node_idx_map = {}
+        self._node_idx_curr = itertools.count()
+        for node in self._data.topological_op_nodes():
+            idx = next(self._node_idx_curr)
+            self._node_idx_map[idx] = node
+
 
         cpy._calibrations = copy.deepcopy(self._calibrations)
         cpy._metadata = copy.deepcopy(self._metadata)
@@ -2387,7 +2394,7 @@ class QuantumCircuit:
 
         """
         # replace in self or in a copy depending on the value of in_place
-        print('assign', self._parameter_table)
+        #print('assign', self._parameter_table)
         if inplace:
             bound_circuit = self
         else:
