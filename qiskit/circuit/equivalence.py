@@ -66,7 +66,7 @@ class EquivalenceLibrary:
         #print('before', equivalent)
         if gate.name == 'p':
             for node in equivalent_circuit._node_idx_map.values():
-                print('in add before', id(node.op))
+                print('in add before', id(node.op), node.op.params)
 
             for param in equivalent_circuit._parameter_table:
                 print("param before copy", param)

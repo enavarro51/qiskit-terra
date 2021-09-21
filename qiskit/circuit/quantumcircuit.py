@@ -313,7 +313,7 @@ class QuantumCircuit:
             self._node_idx_map[key].qargs = qargs
             self._node_idx_map[key].cargs = cargs
 
-            print('in data2', id(inst))
+            #print('in data2', id(inst))
             self._update_parameter_table(inst)
 
     @property
@@ -2062,41 +2062,15 @@ class QuantumCircuit:
         cpy._qubit_set = self._qubit_set.copy()
         cpy._clbit_set = self._clbit_set.copy()
 
-        #print("in copy", self._parameter_table)
-        #for node in self._node_idx_map.values():
-        #    print(id(node.op), node.op)
-        instr_instances = {id(node.op): node.op for node in self._node_idx_map.values()}
-        #for xxx in instr_instances.values():
-        #    print('instance', id(xxx))
-
-        instr_copies = {id_: instr.copy() for id_, instr in instr_instances.items()}
-        """for xxx in instr_copies.values():
-            print('copy', id(xxx))
-        for param in self._parameter_table:
-            print("param", param)
-            for instr, param_index in self._parameter_table[param]:
-                print('id, instr in self.paramt', param_index, id(instr), instr)"""
-        cpy._parameter_table = ParameterTable(
-            {
-                param: [
-                    (instr_copies[id(instr)], param_index)
-                    for instr, param_index in self._parameter_table[param]
-                ]
-                for param in self._parameter_table
-            }
-        )
-
-        """cpy._data = [
-            (instr_copies[id(node.op)], node.qargs.copy(), node.cargs.copy())
-            for node in self._data.topological_op_nodes()
-        ]"""
-        cpy._data = copy.deepcopy(self._data)
-        self._node_idx_map = {}
-        self._node_idx_curr = itertools.count()
-        for node in self._data.topological_op_nodes():
-            idx = next(self._node_idx_curr)
-            self._node_idx_map[idx] = node
-
+        # copy the _data dag and update _node_idx_map and _paramter_table
+        cpy._data = self._copy_data()
+        cpy._node_idx_map = {}
+        cpy._node_idx_curr = itertools.count()
+        cpy._parameter_table.clear()
+        for node in cpy._data.topological_op_nodes():
+            idx = next(cpy._node_idx_curr)
+            cpy._node_idx_map[idx] = node
+            cpy._update_parameter_table(node.op)
 
         cpy._calibrations = copy.deepcopy(self._calibrations)
         cpy._metadata = copy.deepcopy(self._metadata)
@@ -2104,6 +2078,12 @@ class QuantumCircuit:
         if name:
             cpy.name = name
         return cpy
+
+    def _copy_data(self):
+        data = copy.copy(self._data)
+        for node in self._data.topological_op_nodes():
+            data.substitute_node(node, node.op.copy())
+        return data
 
     def _create_creg(self, length: int, name: str) -> ClassicalRegister:
         """Creates a creg, checking if ClassicalRegister with same name exists"""
@@ -2400,6 +2380,8 @@ class QuantumCircuit:
         else:
             #for x in self.data:
             #    print(id(x[0]), x)
+            #print("DOINg BOUND_CIRCUIT")
+            #print(self)
             bound_circuit = self.copy()
             self._increment_instances()
             bound_circuit._name_update()

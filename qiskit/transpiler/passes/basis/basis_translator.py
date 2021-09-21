@@ -381,12 +381,14 @@ def _compose_transforms(basis_transforms, source_basis, source_dag):
 
                 #print('equiv', equiv)
                 
-                #print('equiv params', equiv_params, node.op.params)
-                #print('equiv', id(equiv._parameter_table[equiv_params[0]][0][0]))
+                print('equiv params', equiv_params, node.op.params)
+                print(equiv._parameter_table)
+                print('equiv', id(equiv._parameter_table[equiv_params[0]][0][0]))
                 replacement = equiv.assign_parameters(
                     dict(zip_longest(equiv_params, node.op.params))
                 )
-                #print(replacement.data[0][0])
+                print(replacement.data[0][0])
+                print(replacement._parameter_table)
                 replacement_dag = circuit_to_dag(replacement)
 
                 dag.substitute_node_with_dag(node, replacement_dag)
