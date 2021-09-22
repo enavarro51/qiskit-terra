@@ -45,7 +45,7 @@ def circuit_to_dag(circuit):
             dag = circuit_to_dag(circ)
             dag_drawer(dag)
     """
-    """
+
     dagcircuit = DAGCircuit()
     dagcircuit.name = circuit.name
     dagcircuit.global_phase = circuit.global_phase
@@ -61,11 +61,8 @@ def circuit_to_dag(circuit):
     for register in circuit.cregs:
         dagcircuit.add_creg(register)
 
-    for node in circuit._node_idx_map.values():#_data.topological_op_nodes():#instruction, qargs, cargs in circuit.data:
+    for node in circuit._node_idx_map.values():
         dagcircuit.apply_operation_back(node.op, node.qargs, node.cargs)
-        #print(node, node.op)
-        #dagcircuit.substitute_node(node, node.op.copy())
-        #dagcircuit.apply_operation_back(instruction.copy(), qargs, cargs)
 
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit
@@ -73,19 +70,8 @@ def circuit_to_dag(circuit):
     if circuit._data is None:
         dagcircuit = DAGCircuit()
     else:
-        dagcircuit = circuit._copy_data()#copy.copy(circuit._data)
-    """for node in circuit._node_idx_map.values():
+        dagcircuit = circuit._copy_data()
+    for node in circuit._node_idx_map.values():
         dagcircuit.substitute_node(node, node.op.copy())
-    for node in dagcircuit1.topological_op_nodes():
-        dagcircuit1.substitute_node(node, node.op.copy())
-    if dagcircuit != dagcircuit1:
-        print("\n\n", dagcircuit.count_ops())
-        print("\n", dagcircuit1.count_ops(), "\n")
-        for node in dagcircuit.topological_op_nodes():
-            if hasattr(node.op, "params"):
-                print("\n", node.op.params)
-        for node in dagcircuit1.topological_op_nodes():
-            if hasattr(node.op, "params"):
-                print("\nCIRC1", node.op.params, "\n")
     """
     return dagcircuit

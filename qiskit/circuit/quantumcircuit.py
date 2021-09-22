@@ -232,10 +232,6 @@ class QuantumCircuit:
             self.name = name
         self._increment_instances()
 
-        # Data contains a list of instructions and their contexts,
-        # in the order they were applied.
-        #self._data = []
-
         # Data dag
         from qiskit.dagcircuit import DAGCircuit
 
@@ -304,16 +300,13 @@ class QuantumCircuit:
             self._data.remove_op_node(node)
         self._parameter_table = ParameterTable()
 
-        #print('in qc data', id(inst))
         for inst, qargs, cargs in data_input:
             key = next(self._node_idx_curr)
-            #print('in qc data', id(inst))
             self._node_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
             self._node_idx_map[key].op = inst
             self._node_idx_map[key].qargs = qargs
             self._node_idx_map[key].cargs = cargs
 
-            #print('in data2', id(inst))
             self._update_parameter_table(inst)
 
     @property
@@ -874,7 +867,6 @@ class QuantumCircuit:
 
                 n_instr.condition = DAGCircuit._map_condition(edge_map, instr.condition, self.cregs)
 
-            #mapped_instrs.append((n_instr, n_qargs, n_cargs))
             dest._data.apply_operation_back(n_instr, n_qargs, n_cargs)
 
         """if front:
@@ -887,7 +879,6 @@ class QuantumCircuit:
         if front:
             dest._parameter_table.clear()
         for node in dest._node_idx_map.values():
-            #print('in data', id(node.op))
             dest._update_parameter_table(node.op)
 
         for gate, cals in other.calibrations.items():
@@ -1063,9 +1054,7 @@ class QuantumCircuit:
         try:
             ret = (self._node_idx_map[item].op, self._node_idx_map[item].qargs, self._node_idx_map[item].cargs)
         except KeyError:
-            #print('raising index')
             raise IndexError
-        #print('skiped index')
         return ret
 
     @staticmethod
@@ -1157,7 +1146,7 @@ class QuantumCircuit:
             cargs (list(argument)): clbits to attach instruction to
 
         Returns:
-            qiskit.circuit.InstructionSet: a handle to the instructionSet that was just added
+            qiskit.circuit.InstructionSet: a handle to the InstructionSet that was just added
 
         Raises:
             CircuitError: if object passed is a subclass of Instruction
@@ -1219,21 +1208,16 @@ class QuantumCircuit:
 
         # add the instruction onto the given wires
         instruction_context = instruction, qargs, cargs
-        #self._data.append(instruction_context)
         if instruction.condition is not None:
             if (hasattr(instruction.condition[0], "name")
                     and instruction.condition[0].name not in self._data.cregs):
                 self._data.add_creg(instruction.condition[0])
 
-        #print('in append', id(instruction), instruction)
         node = self._data.apply_operation_back(instruction, qargs, cargs)
-        #print('2', id(node), id(node.op), node.op)
         idx = next(self._node_idx_curr)
         self._node_idx_map[idx] = node
 
         self._update_parameter_table(instruction)
-        #print('3', self._parameter_table)
-        #print('in append', id(instruction))
 
         # mark as normal circuit if a new instruction is added
         self.duration = None
@@ -1243,18 +1227,15 @@ class QuantumCircuit:
 
     def _update_parameter_table(self, instruction: Instruction) -> Instruction:
 
-        #print('in update_p', id(instruction))
         for param_index, param in enumerate(instruction.params):
             if isinstance(param, ParameterExpression):
                 current_parameters = self._parameter_table
-                #print('curr', current_parameters)
 
                 for parameter in param.parameters:
                     if parameter in current_parameters:
                         if not self._check_dup_param_spec(
                             self._parameter_table[parameter], instruction, param_index
                         ):
-                            #print('appended', id(instruction))
                             self._parameter_table[parameter].append((instruction, param_index))
                     else:
                         if parameter.name in self._parameter_table.get_names():
@@ -1262,7 +1243,6 @@ class QuantumCircuit:
                                 f"Name conflict on adding parameter: {parameter.name}"
                             )
                         self._parameter_table[parameter] = [(instruction, param_index)]
-                        #print('in else', id(instruction))
 
                         # clear cache if new parameter is added
                         self._parameters = None
@@ -2063,15 +2043,32 @@ class QuantumCircuit:
         cpy._clbit_set = self._clbit_set.copy()
 
         # copy the _data dag and update _node_idx_map and _paramter_table
-        cpy._data = self._copy_data()
         cpy._node_idx_map = {}
         cpy._node_idx_curr = itertools.count()
         cpy._parameter_table.clear()
+        for node in self._data.topological_op_nodes():
+            #cpy._update_parameter_table(node.op)
+            for param in self._parameter_table:
+                for instr, param_index in self._parameter_table[param]:
+                    cpy._parameter_table[param] = (node.op, param_index)
+
+        cpy._data = self._copy_data()
         for node in cpy._data.topological_op_nodes():
             idx = next(cpy._node_idx_curr)
             cpy._node_idx_map[idx] = node
-            cpy._update_parameter_table(node.op)
+        """instr_instances = {id(node.op): node.op for node in self._node_idx_map.values()}
 
+        instr_copies = {id_: instr.copy() for id_, instr in instr_instances.items()}
+
+        cpy._parameter_table = ParameterTable(
+            {
+                param: [
+                    (instr_copies[id(instr)], param_index)
+                    for instr, param_index in self._parameter_table[param]
+                ]
+                for param in self._parameter_table
+            }
+        )"""
         cpy._calibrations = copy.deepcopy(self._calibrations)
         cpy._metadata = copy.deepcopy(self._metadata)
 
@@ -2374,14 +2371,9 @@ class QuantumCircuit:
 
         """
         # replace in self or in a copy depending on the value of in_place
-        #print('assign', self._parameter_table)
         if inplace:
             bound_circuit = self
         else:
-            #for x in self.data:
-            #    print(id(x[0]), x)
-            #print("DOINg BOUND_CIRCUIT")
-            #print(self)
             bound_circuit = self.copy()
             self._increment_instances()
             bound_circuit._name_update()
@@ -2476,11 +2468,9 @@ class QuantumCircuit:
                 replace instances of ``parameter``.
         """
         # parameter might be in global phase only
-        #print('in assign1', self._parameter_table)
         if parameter in self._parameter_table.keys():
             for instr, param_index in self._parameter_table[parameter]:
                 new_param = instr.params[param_index].assign(parameter, value)
-                #print('in assign', id(instr), new_param, param_index, parameter, value)
                 # if fully bound, validate
                 if len(new_param.parameters) == 0:
                     instr.params[param_index] = instr.validate_parameter(new_param)

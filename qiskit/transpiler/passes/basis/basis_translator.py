@@ -271,11 +271,6 @@ def _basis_search(equiv_lib, source_basis, target_basis, heuristic):
                 continue
 
             equivs = equiv_lib._get_equivalences((gate_name, gate_num_qubits))
-            """print('equivs', equivs)
-            for eqv in equivs:
-                print('EQV PTABLE', id(eqv.circuit._parameter_table[list(eqv.circuit._parameter_table.keys())[0]][0][0]))
-                for node in eqv.circuit._node_idx_map.values():
-                    print('EQV PTABLE 2', id(node.op))"""
 
             basis_remain = current_basis - {(gate_name, gate_num_qubits)}
             neighbors = [
@@ -347,9 +342,7 @@ def _compose_transforms(basis_transforms, source_basis, source_dag):
         dag.add_qreg(qr)
         dag.apply_operation_back(placeholder_gate, qr[:], [])
         mapped_instrs[gate_name, gate_num_qubits] = placeholder_params, dag
-    #print('transforms', basis_transforms)
-    #print('source', source_basis)
-    #print('source_dag', source_dag)
+
     for gate_name, gate_num_qubits, equiv_params, equiv in basis_transforms:
         logger.debug(
             "Composing transform step: %s/%s %s =>\n%s",
@@ -379,16 +372,13 @@ def _compose_transforms(basis_transforms, source_basis, source_dag):
             for node in doomed_nodes:
                 from qiskit.converters import circuit_to_dag
 
-                #print('equiv', equiv)
-                
-                print('equiv params', equiv_params, node.op.params)
+                print("\nIn basis compose_transforms", node.op)
                 print(equiv._parameter_table)
-                print('equiv', id(equiv._parameter_table[equiv_params[0]][0][0]))
+                print(equiv_params)
                 replacement = equiv.assign_parameters(
                     dict(zip_longest(equiv_params, node.op.params))
                 )
-                print(replacement.data[0][0])
-                print(replacement._parameter_table)
+
                 replacement_dag = circuit_to_dag(replacement)
 
                 dag.substitute_node_with_dag(node, replacement_dag)

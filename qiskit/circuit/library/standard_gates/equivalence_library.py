@@ -113,13 +113,6 @@ q = QuantumRegister(1, "q")
 theta = Parameter("theta")
 phase_to_u1 = QuantumCircuit(q)
 phase_to_u1.append(U1Gate(theta), [0])
-for param in phase_to_u1._parameter_table:
-    print("param", param)
-    for instr, param_index in phase_to_u1._parameter_table[param]:
-        print('id, instr in self.paramt', param_index, id(instr), instr)
-
-#print('in equiv lib', id(phase_to_u1._parameter_table[0][1]))
-print('iel 2', id(phase_to_u1._node_idx_map[0].op))
 _sel.add_equivalence(PhaseGate(theta), phase_to_u1)
 
 q = QuantumRegister(1, "q")

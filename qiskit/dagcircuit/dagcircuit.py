@@ -92,8 +92,6 @@ class DAGCircuit:
         self.duration = None
         self.unit = "dt"
 
-        self._inst_idx_map = {}
-
     def to_networkx(self):
         """Returns a copy of the DAGCircuit in networkx format."""
         try:
@@ -925,22 +923,13 @@ class DAGCircuit:
 
         return iter(rx.lexicographical_topological_sort(self._multi_graph, key=_key))
 
-    def topological_op_nodes(self, reverse=False):
+    def topological_op_nodes(self):
         """
         Yield op nodes in topological order.
 
         Returns:
             generator(DAGOpNode): op node in topological order
         """
-        """def _key(x):
-            return x.sort_key
-
-        nodes = rx.lexicographical_topological_sort(self._multi_graph,
-                                                    key=_key)
-        if reverse:
-            return (nd for nd in reversed(nodes) if isinstance(nd, DAGOpNode))
-        else:
-            return (nd for nd in nodes if isinstance(nd, DAGOpNode))"""
         return (nd for nd in self.topological_nodes() if isinstance(nd, DAGOpNode))
 
     def substitute_node_with_dag(self, node, input_dag, wires=None):
