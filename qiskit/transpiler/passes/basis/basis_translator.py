@@ -284,6 +284,9 @@ def _basis_search(equiv_lib, source_basis, target_basis, heuristic):
                 )
                 for params, equiv in equivs
             ]
+            for params, equiv in equivs:
+                for inst, qargs, cargs in equiv.data:
+                    print("\n equiv data", inst, qargs, cargs)
 
             # Weight total path length of transformation weakly.
             tentative_cost_from_source = cost_from_source[current_basis] + 1e-3
@@ -378,6 +381,7 @@ def _compose_transforms(basis_transforms, source_basis, source_dag):
                 replacement = equiv.assign_parameters(
                     dict(zip_longest(equiv_params, node.op.params))
                 )
+                print("rep", replacement._parameter_table)
 
                 replacement_dag = circuit_to_dag(replacement)
 

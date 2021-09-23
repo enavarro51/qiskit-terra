@@ -2033,7 +2033,9 @@ class QuantumCircuit:
         Returns:
           QuantumCircuit: a deepcopy of the current circuit, with the specified name
         """
+        print('start of copy', self._parameter_table)
         cpy = copy.copy(self)
+        print('start of copy 2', cpy._parameter_table)
         # copy registers correctly, in copy.copy they are only copied via reference
         cpy.qregs = self.qregs.copy()
         cpy.cregs = self.cregs.copy()
@@ -2045,14 +2047,15 @@ class QuantumCircuit:
         # copy the _data dag and update _node_idx_map and _paramter_table
         cpy._node_idx_map = {}
         cpy._node_idx_curr = itertools.count()
-        cpy._parameter_table.clear()
-        for node in self._data.topological_op_nodes():
-            #cpy._update_parameter_table(node.op)
-            for param in self._parameter_table:
-                for instr, param_index in self._parameter_table[param]:
-                    cpy._parameter_table[param] = (node.op, param_index)
-
+        #cpy._parameter_table.clear()
         cpy._data = self._copy_data()
+        for node in cpy._data.topological_op_nodes():
+            cpy._update_parameter_table(node.op)
+            """for param in cpy._parameter_table:
+                for instr, param_index in cpy._parameter_table[param]:
+                    cpy._parameter_table[param].append((node.op, param_index))"""
+        print('in copy self', self._parameter_table)
+        print('in copy', cpy._parameter_table)
         for node in cpy._data.topological_op_nodes():
             idx = next(cpy._node_idx_curr)
             cpy._node_idx_map[idx] = node
@@ -2297,7 +2300,7 @@ class QuantumCircuit:
         parameters = set(self._parameter_table)
         if isinstance(self.global_phase, ParameterExpression):
             parameters.update(self.global_phase.parameters)
-
+        print('in unsorted', parameters)
         return parameters
 
     def assign_parameters(
@@ -2374,9 +2377,13 @@ class QuantumCircuit:
         if inplace:
             bound_circuit = self
         else:
-            bound_circuit = self.copy()
+            print("bound1", parameters)
+            bound_circuit = self#.copy()
+            print("bound2")
             self._increment_instances()
+            print("bound3")
             bound_circuit._name_update()
+            print("bound4", bound_circuit._parameter_table)
 
         if isinstance(parameters, dict):
             # unroll the parameter dictionary (needed if e.g. it contains a ParameterVector)
