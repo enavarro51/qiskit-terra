@@ -45,7 +45,7 @@ def circuit_to_dag(circuit):
             dag = circuit_to_dag(circ)
             dag_drawer(dag)
     """
-
+    """
     dagcircuit = DAGCircuit()
     dagcircuit.name = circuit.name
     dagcircuit.global_phase = circuit.global_phase
@@ -62,7 +62,7 @@ def circuit_to_dag(circuit):
         dagcircuit.add_creg(register)
 
     for node in circuit._node_idx_map.values():
-        dagcircuit.apply_operation_back(node.op, node.qargs, node.cargs)
+        dagcircuit.apply_operation_back(node.op.copy(), node.qargs, node.cargs)
 
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit
@@ -71,7 +71,9 @@ def circuit_to_dag(circuit):
         dagcircuit = DAGCircuit()
     else:
         dagcircuit = circuit._copy_data()
-    for node in circuit._node_idx_map.values():
-        dagcircuit.substitute_node(node, node.op.copy())
-    """
+
+    dagcircuit.global_phase = circuit.global_phase
+    dagcircuit.calibrations = circuit.calibrations
+    dagcircuit.metadata = circuit.metadata
+
     return dagcircuit

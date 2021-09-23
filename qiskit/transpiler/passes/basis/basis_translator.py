@@ -136,7 +136,6 @@ class BasisTranslator(TransformationPass):
 
             if (node.op.name, node.op.num_qubits) in instr_map:
                 target_params, target_dag = instr_map[node.op.name, node.op.num_qubits]
-                print("\n target params", target_params)
 
                 if len(node.op.params) != len(target_params):
                     raise TranspilerError(
@@ -153,8 +152,6 @@ class BasisTranslator(TransformationPass):
 
                     target_circuit = dag_to_circuit(target_dag)
 
-                    print("\n node.op.params", node.op.params)
-                    print(target_circuit._parameter_table)
                     target_circuit.assign_parameters(
                         dict(zip_longest(target_params, node.op.params)), inplace=True
                     )
@@ -287,9 +284,6 @@ def _basis_search(equiv_lib, source_basis, target_basis, heuristic):
                 )
                 for params, equiv in equivs
             ]
-            for params, equiv in equivs:
-                for inst, qargs, cargs in equiv.data:
-                    print("\n equiv data", inst, qargs, cargs)
 
             # Weight total path length of transformation weakly.
             tentative_cost_from_source = cost_from_source[current_basis] + 1e-3
@@ -378,13 +372,9 @@ def _compose_transforms(basis_transforms, source_basis, source_dag):
             for node in doomed_nodes:
                 from qiskit.converters import circuit_to_dag
 
-                print("\nIn basis compose_transforms", node.op)
-                print(equiv._parameter_table)
-                print(equiv_params)
                 replacement = equiv.assign_parameters(
                     dict(zip_longest(equiv_params, node.op.params))
                 )
-                print("rep", replacement._parameter_table)
 
                 replacement_dag = circuit_to_dag(replacement)
 
