@@ -136,6 +136,7 @@ class BasisTranslator(TransformationPass):
 
             if (node.op.name, node.op.num_qubits) in instr_map:
                 target_params, target_dag = instr_map[node.op.name, node.op.num_qubits]
+                print("\n target params", target_params)
 
                 if len(node.op.params) != len(target_params):
                     raise TranspilerError(
