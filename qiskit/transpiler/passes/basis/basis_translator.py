@@ -153,6 +153,8 @@ class BasisTranslator(TransformationPass):
 
                     target_circuit = dag_to_circuit(target_dag)
 
+                    print("\n node.op.params", node.op.params)
+                    print(target_circuit._parameter_table)
                     target_circuit.assign_parameters(
                         dict(zip_longest(target_params, node.op.params)), inplace=True
                     )
