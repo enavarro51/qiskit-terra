@@ -180,8 +180,8 @@ class EvolvedOperatorAnsatz(BlueprintCircuit):
         if self._data is not None:
             return
 
+        super()._build()
         self._check_configuration()
-        self._data = []
 
         # get the evolved operators as circuits
         from qiskit.opflow import PauliOp

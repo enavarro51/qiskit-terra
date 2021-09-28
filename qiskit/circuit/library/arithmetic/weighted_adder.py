@@ -231,8 +231,11 @@ class WeightedAdder(BlueprintCircuit):
         return valid
 
     def _build(self):
-        super()._build()
+        if self._data is not None:
+            return
 
+        super()._build()
+        self._check_configuration()
         num_result_qubits = self.num_state_qubits + self.num_sum_qubits
 
         circuit = QuantumCircuit(*self.qregs)

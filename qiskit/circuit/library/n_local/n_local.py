@@ -935,12 +935,12 @@ class NLocal(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the circuit."""
-        if self._data:
+        if self._data is not None:
             return
 
-        _ = self._check_configuration()
+        super()._build()
 
-        self._data = []
+        _ = self._check_configuration()
 
         if self.num_qubits == 0:
             return

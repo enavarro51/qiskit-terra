@@ -230,6 +230,7 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
             if raise_on_failure:
                 raise AttributeError("The number of qubits has not been set.")
 
+        print('num qubits', self.num_qubits)
         if self.num_qubits < self.num_state_qubits + 1:
             valid = False
             if raise_on_failure:
@@ -246,10 +247,13 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
         return valid
 
     def _reset_registers(self, num_state_qubits: Optional[int]) -> None:
+
         if num_state_qubits:
             qr_state = QuantumRegister(num_state_qubits)
             qr_target = QuantumRegister(1)
             self.qregs = [qr_state, qr_target]
+            if self._data is None:
+                self._build()
 
             # Calculate number of ancilla qubits required
             num_ancillas = num_state_qubits + 1
@@ -275,8 +279,7 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
         if self._data is not None:
             return
 
-        self._data = []
-
+        super()._build()
         # check whether the configuration is valid
         self._check_configuration()
 

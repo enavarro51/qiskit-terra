@@ -11,11 +11,13 @@
 # that they have been altered from the originals.
 
 """Quantum Fourier Transform Circuit."""
+from collections import OrderedDict
 
 from typing import Optional
 import numpy as np
 
 from qiskit.circuit import QuantumCircuit, QuantumRegister
+from qiskit.dagcircuit import DAGCircuit
 
 from ..blueprintcircuit import BlueprintCircuit
 
@@ -229,10 +231,13 @@ class QFT(BlueprintCircuit):
         super(QFT, inverted)._invalidate()
 
         # data consists of the QFT gate only
-        iqft = self._data[0][0].inverse()
+        iqft = next(self._data.topological_op_nodes()).op.inverse()
         iqft.name = name
 
-        inverted._data = []
+        inverted._data = DAGCircuit()
+        qubits = [qbit for qreg in self.qregs for qbit in qreg]
+        inverted._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self.qregs)
+        inverted._data.add_qubits(qubits)
         inverted._append(iqft, inverted.qubits, [])
 
         inverted._inverse = not self._inverse

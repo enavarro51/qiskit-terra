@@ -13,6 +13,8 @@
 """A wrapper class for the purposes of validating modifications to
 QuantumCircuit.data while maintaining the interface of a python list."""
 
+import copy
+
 from collections.abc import MutableSequence
 
 from qiskit.circuit.exceptions import CircuitError
@@ -82,7 +84,7 @@ class QuantumCircuitData(MutableSequence):
     def __cast(self, other):
         return other._circuit._data if isinstance(other, QuantumCircuitData) else other
 
-    def __repr__(self):
+    """def __repr__(self):
         return repr(self._circuit._data)
 
     def __lt__(self, other):
@@ -92,7 +94,7 @@ class QuantumCircuitData(MutableSequence):
         return self._circuit._data <= self.__cast(other)
 
     def __eq__(self, other):
-        return self._circuit._data == self.__cast(other)
+        return self._circuit.data == self.__cast(other)
 
     def __gt__(self, other):
         return self._circuit._data > self.__cast(other)
@@ -110,7 +112,7 @@ class QuantumCircuitData(MutableSequence):
         return self._circuit._data * n
 
     def __rmul__(self, n):
-        return n * self._circuit._data
+        return n * self._circuit._data"""
 
     def sort(self, *args, **kwargs):
         """In-place stable sort. Accepts arguments of list.sort."""
@@ -118,4 +120,4 @@ class QuantumCircuitData(MutableSequence):
 
     def copy(self):
         """Returns a shallow copy of instruction list."""
-        return self._circuit._data.copy()
+        return copy.copy(self._circuit._data)

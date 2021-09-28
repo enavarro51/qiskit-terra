@@ -338,7 +338,8 @@ class PiecewiseChebyshev(BlueprintCircuit):
         if self._data is not None:
             return
 
-        self._data = []
+        super()._build()
+        self._check_configuration()
 
         # check whether the configuration is valid
         self._check_configuration()

@@ -314,8 +314,8 @@ class PolynomialPauliRotations(FunctionalPauliRotations):
         if self._data is not None:
             return
 
-        self._data = []
-
+        super()._build()
+        
         # check whether the configuration is valid
         self._check_configuration()
 

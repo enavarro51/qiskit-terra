@@ -238,6 +238,8 @@ class QuantumCircuit:
         self._data = DAGCircuit()
         self._node_idx_map = {}
         self._node_idx_curr = itertools.count()
+        self._data._global_phase = global_phase
+        self._data._metadata = metadata
 
         # This is a map of registers bound to this circuit, by name.
         self.qregs = []
@@ -327,6 +329,7 @@ class QuantumCircuit:
                 {'gate_name': {(qubits, gate_params): schedule}}
         """
         self._calibrations = defaultdict(dict, calibrations)
+        self._data._calibrations = self._calibrations
 
     @property
     def metadata(self) -> dict:
@@ -883,8 +886,10 @@ class QuantumCircuit:
 
         for gate, cals in other.calibrations.items():
             dest._calibrations[gate].update(cals)
+            dest._data._calibrations = dest._calibrations
 
         dest.global_phase += other.global_phase
+        dest._data.global_phase = dest.global_phase
 
         if inplace:
             return None
@@ -1853,7 +1858,7 @@ class QuantumCircuit:
             if node.op.condition:
                 # Controls operate over all bits of a classical register
                 # or over a single bit
-                if isinstance(instr.condition[0], Clbit):
+                if isinstance(node.op.condition[0], Clbit):
                     condition_bits = [node.op.condition[0]]
                 else:
                     condition_bits = node.op.condition[0]
@@ -3925,8 +3930,10 @@ class QuantumCircuit:
         """
         if isinstance(gate, Gate):
             self._calibrations[gate.name][(tuple(qubits), tuple(gate.params))] = schedule
+            self._data._calibrations[gate.name][(tuple(qubits), tuple(gate.params))] = schedule
         else:
             self._calibrations[gate][(tuple(qubits), tuple(params or []))] = schedule
+            self._data._calibrations[gate][(tuple(qubits), tuple(params or []))] = schedule
 
     # Functions only for scheduled circuits
     def qubit_duration(self, *qubits: Union[Qubit, int]) -> float:

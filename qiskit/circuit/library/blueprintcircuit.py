@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 
 """Blueprint circuit object."""
+from collections import OrderedDict
 
 from typing import Optional
 from abc import ABC, abstractmethod
@@ -35,6 +36,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         The ``_data`` argument storing the internal circuit data is set to ``None`` to indicate
         that the circuit has not been built yet.
         """
+        #print('in bp init')
         super().__init__(*regs, name=name)
         self._data = None
         self._qregs = []
@@ -63,12 +65,20 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         if self._data is not None:
             return
 
+        #print('in bp build')
         from qiskit.dagcircuit import DAGCircuit
 
         self._data = DAGCircuit()
+        qubits = [qbit for qreg in self.qregs for qbit in qreg]
+        clbits = [cbit for creg in self.cregs for cbit in creg]
+        self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self.qregs)
+        self._data.cregs = OrderedDict((creg.name, creg) for creg in self.cregs)
+        self._data.add_qubits(qubits)
+        self._data.add_clbits(clbits)
 
         # check whether the configuration is valid
         self._check_configuration()
+        #print('after bp build')
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""

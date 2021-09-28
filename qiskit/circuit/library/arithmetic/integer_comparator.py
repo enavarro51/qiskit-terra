@@ -183,7 +183,11 @@ class IntegerComparator(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the comparator circuit."""
+        if self._data is not None:
+            return
+
         super()._build()
+        self._check_configuration()
 
         qr_state = self.qubits[: self.num_state_qubits]
         q_compare = self.qubits[self.num_state_qubits]

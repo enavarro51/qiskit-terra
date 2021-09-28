@@ -45,7 +45,6 @@ def circuit_to_dag(circuit):
             dag = circuit_to_dag(circ)
             dag_drawer(dag)
     """
-    """
     dagcircuit = DAGCircuit()
     dagcircuit.name = circuit.name
     dagcircuit.global_phase = circuit.global_phase
@@ -70,10 +69,10 @@ def circuit_to_dag(circuit):
     if circuit._data is None:
         dagcircuit = DAGCircuit()
     else:
-        dagcircuit = circuit._copy_data()
+        dagcircuit = copy.deepcopy(circuit._data)#circuit._copy_data()
 
     dagcircuit.global_phase = circuit.global_phase
     dagcircuit.calibrations = circuit.calibrations
     dagcircuit.metadata = circuit.metadata
-
+    """
     return dagcircuit
