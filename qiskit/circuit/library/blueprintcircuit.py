@@ -42,7 +42,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qregs = []
         self._cregs = []
         self._qubits = []
-        self._qubit_set = set()
+        self._qubit_indices = dict()
         print('end bp init')
 
     @abstractmethod
@@ -95,19 +95,13 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @qregs.setter
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
-        self._qregs = qregs
+        self._qregs = []
         self._qubits = []
         self._ancillas = []
-        #qubits = [qbit for qreg in qregs for qbit in qreg]
-        """"for qubit in qubits:
-            if self._data and qubit not in self._data.qubits:
-                self._data.add_qubits([qubit])
-        self._qubit_set = set(self._qubits)
-        for qreg in qregs:
-            if self._data and qreg.name not in self._data.qregs:
-                self._data.add_qreg(qreg)"""
+        self._qubit_indices = {}
 
         self.add_register(*qregs)
+
         self._invalidate()
 
     @property
@@ -154,10 +148,10 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     def __getitem__(self, item):
         return self.data[item]
 
-    def size(self):
+    def size(self, *args, **kwargs):
         if self._data is None:
             self._build()
-        return super().size()
+        return super().size(*args, **kwargs)
 
     def to_instruction(self, parameter_map=None, label=None):
         if self._data is None:
@@ -169,10 +163,10 @@ class BlueprintCircuit(QuantumCircuit, ABC):
             self._build()
         return super().to_gate(parameter_map, label=label)
 
-    def depth(self):
+    def depth(self, *args, **kwargs):
         if self._data is None:
             self._build()
-        return super().depth()
+        return super().depth(*args, **kwargs)
 
     def count_ops(self):
         if self._data is None:
