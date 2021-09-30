@@ -68,12 +68,12 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
             name: The name of the circuit.
         """
         # store parameters
-        #print('in pw init', print('basis', basis, name))
+        print('in pw init', print('basis', basis, name))
         self._breakpoints = breakpoints if breakpoints is not None else [0]
         self._slopes = slopes if slopes is not None else [1]
         self._offsets = offsets if offsets is not None else [0]
 
-        #print(PiecewiseLinearPauliRotations.__mro__)
+        print(PiecewiseLinearPauliRotations.__mro__)
         super().__init__(num_state_qubits=num_state_qubits, basis=basis, name=name)
 
     @property
@@ -211,7 +211,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
             if raise_on_failure:
                 raise AttributeError("The number of qubits has not been set.")
 
-        #print("num qubits", self.num_qubits, self._data)
+        print("num qubits", self.num_qubits, self._data)
         if self.num_qubits < self.num_state_qubits + 1:
             valid = False
             if raise_on_failure:
@@ -241,7 +241,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
                 qr_ancilla = AncillaRegister(num_ancillas)
                 if self._data is None:
                     self._build()
-                #print('qr ancilla', num_state_qubits, qr_ancilla)
+                print('qr ancilla', num_state_qubits, qr_ancilla)
                 self.add_register(qr_ancilla)
         else:
             self.qregs = []
@@ -254,7 +254,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
 
         super()._build()
 
-        #print(self.qregs, self.basis)
+        print(self.qregs, self.basis)
         circuit = QuantumCircuit(*self.qregs, name=self.name)
 
         qr_state = circuit.qubits[: self.num_state_qubits]
@@ -294,6 +294,6 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
 
                 # uncompute comparator
                 circuit.append(comp.to_gate().inverse(), qr[:] + qr_helper[: comp.num_ancillas])
-        #print('build qubits')
+        print('build qubits')
         self.append(circuit.to_gate(), self.qubits)
-        #print('end pw build')
+        print('end pw build')

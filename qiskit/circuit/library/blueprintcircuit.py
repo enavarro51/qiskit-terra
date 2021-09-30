@@ -36,13 +36,14 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         The ``_data`` argument storing the internal circuit data is set to ``None`` to indicate
         that the circuit has not been built yet.
         """
-        #print('in bp init')
+        print('in bp init')
         super().__init__(*regs, name=name)
         self._data = None
         self._qregs = []
         self._cregs = []
         self._qubits = []
         self._qubit_set = set()
+        print('end bp init')
 
     @abstractmethod
     def _check_configuration(self, raise_on_failure: bool = True) -> bool:
@@ -65,20 +66,20 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         if self._data is not None:
             return
 
-        #print('in bp build')
+        print('in bp build')
         from qiskit.dagcircuit import DAGCircuit
 
         self._data = DAGCircuit()
-        qubits = [qbit for qreg in self.qregs for qbit in qreg]
+        """qubits = [qbit for qreg in self.qregs for qbit in qreg]
         clbits = [cbit for creg in self.cregs for cbit in creg]
         self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self.qregs)
         self._data.cregs = OrderedDict((creg.name, creg) for creg in self.cregs)
         self._data.add_qubits(qubits)
-        self._data.add_clbits(clbits)
+        self._data.add_clbits(clbits)"""
 
         # check whether the configuration is valid
         self._check_configuration()
-        #print('after bp build')
+        print('after bp build')
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
@@ -95,14 +96,18 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
         self._qregs = qregs
-        self._qubits = [qbit for qreg in qregs for qbit in qreg]
-        for qubit in self._qubits:
+        self._qubits = []
+        self._ancillas = []
+        #qubits = [qbit for qreg in qregs for qbit in qreg]
+        """"for qubit in qubits:
             if self._data and qubit not in self._data.qubits:
                 self._data.add_qubits([qubit])
         self._qubit_set = set(self._qubits)
         for qreg in qregs:
             if self._data and qreg.name not in self._data.qregs:
-                self._data.add_qreg(qreg)
+                self._data.add_qreg(qreg)"""
+
+        self.add_register(*qregs)
         self._invalidate()
 
     @property

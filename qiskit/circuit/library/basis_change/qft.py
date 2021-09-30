@@ -96,6 +96,7 @@ class QFT(BlueprintCircuit):
             insert_barriers: If True, barriers are inserted as visualization improvement.
             name: The name of the circuit.
         """
+        print('in qft init')
         if name is None:
             name = "IQFT" if inverse else "QFT"
 
@@ -106,6 +107,7 @@ class QFT(BlueprintCircuit):
         self._inverse = inverse
         self._data = None
         self.num_qubits = num_qubits
+        print('end qft init')
 
     @property
     def num_qubits(self) -> int:
@@ -254,6 +256,7 @@ class QFT(BlueprintCircuit):
 
     def _build(self) -> None:
         """Construct the circuit representing the desired state vector."""
+        print('in qft build')
         super()._build()
 
         num_qubits = self.num_qubits
@@ -281,3 +284,4 @@ class QFT(BlueprintCircuit):
 
         wrapped = circuit.to_instruction() if self.insert_barriers else circuit.to_gate()
         self.compose(wrapped, qubits=self.qubits, inplace=True)
+        print('end qft build')
