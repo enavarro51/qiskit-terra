@@ -149,7 +149,7 @@ class EvolvedOperatorAnsatz(BlueprintCircuit):
     @property
     def qregs(self):
         """A list of the quantum registers associated with the circuit."""
-        if self._data is None:
+        if not self._valid:
             self._build()
         return self._qregs
 
@@ -177,11 +177,13 @@ class EvolvedOperatorAnsatz(BlueprintCircuit):
             return np.zeros(self.reps * len(self.operators), dtype=float)
 
     def _build(self):
-        if self._data is not None:
+        if self._valid:
             return
 
+        super()._build()
+
         self._check_configuration()
-        self._data = []
+        #self._data = []
 
         # get the evolved operators as circuits
         from qiskit.opflow import PauliOp

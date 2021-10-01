@@ -263,10 +263,12 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         # do not build the circuit if _data is already populated
-        if self._data is not None:
+        if self._valid:
             return
 
-        self._data = []
+        super()._build()
+
+        #self._data = []
 
         # check whether the configuration is valid
         self._check_configuration()
