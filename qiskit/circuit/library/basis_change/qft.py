@@ -105,7 +105,6 @@ class QFT(BlueprintCircuit):
         self._do_swaps = do_swaps
         self._insert_barriers = insert_barriers
         self._inverse = inverse
-        self._data = None
         self.num_qubits = num_qubits
         print('end qft init')
 
@@ -213,9 +212,9 @@ class QFT(BlueprintCircuit):
         """
         return self._inverse
 
-    def _invalidate(self) -> None:
-        """Invalidate the current build of the circuit."""
-        self._data = None
+    #def _invalidate(self) -> None:
+    #    """Invalidate the current build of the circuit."""
+    #    self._data = None
 
     def inverse(self) -> "QFT":
         """Invert this circuit.
@@ -256,6 +255,9 @@ class QFT(BlueprintCircuit):
 
     def _build(self) -> None:
         """Construct the circuit representing the desired state vector."""
+
+        if self._valid:
+            return
         print('in qft build')
         super()._build()
 
@@ -280,8 +282,9 @@ class QFT(BlueprintCircuit):
                 circuit.swap(i, num_qubits - i - 1)
 
         if self._inverse:
-            circuit._data = circuit.inverse()
+            circuit = circuit.inverse()
 
         wrapped = circuit.to_instruction() if self.insert_barriers else circuit.to_gate()
         self.compose(wrapped, qubits=self.qubits, inplace=True)
+        self._valid = True
         print('end qft build')

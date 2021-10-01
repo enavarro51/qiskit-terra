@@ -68,13 +68,15 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
             name: The name of the circuit.
         """
         # store parameters
-        print('in pw init', print('basis', basis, name))
+        print('in pw init')
+        print('basis', basis, name, num_state_qubits)
         self._breakpoints = breakpoints if breakpoints is not None else [0]
         self._slopes = slopes if slopes is not None else [1]
         self._offsets = offsets if offsets is not None else [0]
 
         print(PiecewiseLinearPauliRotations.__mro__)
         super().__init__(num_state_qubits=num_state_qubits, basis=basis, name=name)
+        print('end pw init, num_state', self._num_state_qubits)
 
     @property
     def num_ancilla_qubits(self):
@@ -107,6 +109,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
         self._invalidate()
         self._breakpoints = breakpoints
 
+        print('break', self._breakpoints, self.num_state_qubits)
         if self.num_state_qubits and breakpoints:
             self._reset_registers(self.num_state_qubits)
 
@@ -230,6 +233,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
     def _reset_registers(self, num_state_qubits: Optional[int]) -> None:
         self.qregs = []
 
+        print('in reset', num_state_qubits)
         if num_state_qubits is not None:
             qr_state = QuantumRegister(num_state_qubits)
             qr_target = QuantumRegister(1)
@@ -239,19 +243,16 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
             if len(self.breakpoints) > 1:
                 num_ancillas = num_state_qubits
                 qr_ancilla = AncillaRegister(num_ancillas)
-                if self._data is None:
-                    self._build()
                 print('qr ancilla', num_state_qubits, qr_ancilla)
                 self.add_register(qr_ancilla)
 
-
     def _build(self):
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()
 
-        print(self.qregs, self.basis)
+        print('in pl build', self.qregs, self.basis)
         circuit = QuantumCircuit(*self.qregs, name=self.name)
 
         qr_state = circuit.qubits[: self.num_state_qubits]
@@ -293,4 +294,5 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
                 circuit.append(comp.to_gate().inverse(), qr[:] + qr_helper[: comp.num_ancillas])
         print('build qubits')
         self.append(circuit.to_gate(), self.qubits)
+        self.valid = True
         print('end pw build')

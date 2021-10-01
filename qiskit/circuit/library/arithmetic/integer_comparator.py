@@ -55,9 +55,9 @@ class IntegerComparator(BlueprintCircuit):
             geq: If True, evaluate a ``>=`` condition, else ``<``.
             name: Name of the circuit.
         """
+        print('in ic init')
         super().__init__(name=name)
 
-        self._data = None
         self._value = None
         self._geq = None
         self._num_state_qubits = None
@@ -65,6 +65,7 @@ class IntegerComparator(BlueprintCircuit):
         self.value = value
         self.geq = geq
         self.num_state_qubits = num_state_qubits
+        print('end ic init')
 
     @property
     def value(self) -> int:
@@ -138,7 +139,9 @@ class IntegerComparator(BlueprintCircuit):
                 qr_state = QuantumRegister(num_state_qubits, name="state")
                 q_compare = QuantumRegister(1, name="compare")
 
+                print('in ic before qregs', self._data)
                 self.qregs = [qr_state, q_compare]
+                print('in ic after qregs', self.qregs)
 
                 # add ancillas is required
                 num_ancillas = num_state_qubits - 1
@@ -183,7 +186,8 @@ class IntegerComparator(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the comparator circuit."""
-        if self._data is not None:
+        print('in ic build')
+        if self._valid:
             return
 
         super()._build()
@@ -254,3 +258,5 @@ class IntegerComparator(BlueprintCircuit):
                 circuit.x(q_compare)
 
         self.append(circuit.to_gate(), self.qubits)
+        self._valid = True
+        print('end ic build')

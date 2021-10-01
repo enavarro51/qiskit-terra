@@ -149,8 +149,6 @@ class EvolvedOperatorAnsatz(BlueprintCircuit):
     @property
     def qregs(self):
         """A list of the quantum registers associated with the circuit."""
-        if self._data is None:
-            self._build()
         return self._qregs
 
     @qregs.setter
@@ -177,7 +175,7 @@ class EvolvedOperatorAnsatz(BlueprintCircuit):
             return np.zeros(self.reps * len(self.operators), dtype=float)
 
     def _build(self):
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

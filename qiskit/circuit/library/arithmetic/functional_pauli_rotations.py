@@ -36,8 +36,8 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         super().__init__(name=name)
 
         # define internal parameters
-        self._num_state_qubits = num_state_qubits
-        self._basis = basis
+        self._num_state_qubits = None
+        self._basis = None
 
         # store parameters
         self.num_state_qubits = num_state_qubits
@@ -80,6 +80,8 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         Returns:
             The number of state qubits.
         """
+        #if not self._valid:
+        #    self._build()
         return self._num_state_qubits
 
     @num_state_qubits.setter
@@ -92,6 +94,7 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         Args:
             num_state_qubits: The new number of qubits.
         """
+        print('in fp num_state', self._num_state_qubits, num_state_qubits)
         if self._num_state_qubits is None or num_state_qubits != self._num_state_qubits:
             self._invalidate()
             self._num_state_qubits = num_state_qubits

@@ -133,7 +133,6 @@ class NLocal(BlueprintCircuit):
         self._skip_final_rotation_layer = skip_final_rotation_layer
         self._skip_unentangled_qubits = skip_unentangled_qubits
         self._initial_state, self._initial_state_circuit = None, None
-        self._data = None
         self._bounds = None
 
         if int(reps) != reps:
@@ -726,7 +725,7 @@ class NLocal(BlueprintCircuit):
 
     def _invalidate(self):
         """Invalidate the current circuit build."""
-        self._data = None
+        super()._invalidate()
         self._parameter_table = ParameterTable()
 
     def add_layer(
@@ -812,7 +811,7 @@ class NLocal(BlueprintCircuit):
             AttributeError: If the parameters are given as list and do not match the number
                 of parameters.
         """
-        if self._data is None:
+        if not self._valid:
             self._build()
 
         if not isinstance(parameters, dict):
@@ -935,7 +934,7 @@ class NLocal(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the circuit."""
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

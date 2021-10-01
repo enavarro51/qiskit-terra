@@ -328,7 +328,7 @@ class PiecewiseChebyshev(BlueprintCircuit):
         """Build the circuit. The operation is considered successful when q_objective is
         :math:`|1>`"""
         # do not build the circuit if _data is already populated
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

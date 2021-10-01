@@ -68,17 +68,17 @@ class TestBlueprintCircuit(QiskitTestCase):
         mock._build()
 
         with self.subTest(msg="after building"):
-            self.assertGreater(len(mock._data), 0)
+            self.assertGreater(len(mock.data), 0)
             self.assertEqual(len(mock._parameter_table), 1)
 
         mock._invalidate()
         with self.subTest(msg="after invalidating"):
-            self.assertTrue(mock._data is None)
+            self.assertTrue(mock._valid is False)
             self.assertEqual(len(mock._parameter_table), 0)
 
         mock._build()
         with self.subTest(msg="after re-building"):
-            self.assertGreater(len(mock._data), 0)
+            self.assertGreater(len(mock.data), 0)
             self.assertEqual(len(mock._parameter_table), 1)
 
     def test_calling_attributes_works(self):
@@ -88,7 +88,7 @@ class TestBlueprintCircuit(QiskitTestCase):
             with self.subTest(prop=prop):
                 circuit = MockBlueprint(3)
                 getattr(circuit, prop)
-                self.assertGreater(len(circuit._data), 0)
+                self.assertGreater(len(circuit.data), 0)
 
         methods = [
             "qasm",
@@ -106,12 +106,12 @@ class TestBlueprintCircuit(QiskitTestCase):
                 if method == "qasm":
                     continue  # raises since parameterized circuits produce invalid qasm 2.0.
                 getattr(circuit, method)()
-                self.assertGreater(len(circuit._data), 0)
+                self.assertGreater(len(circuit.data), 0)
 
         with self.subTest(method="__get__[0]"):
             circuit = MockBlueprint(3)
             _ = circuit[2]
-            self.assertGreater(len(circuit._data), 0)
+            self.assertGreater(len(circuit.data), 0)
 
     def test_compose_works(self):
         """Test that the circuit is constructed when compose is called."""

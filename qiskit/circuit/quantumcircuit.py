@@ -1896,7 +1896,7 @@ class QuantumCircuit:
         for node in self._node_idx_map.values():
             levels = []
             reg_ints = []
-            for ind, reg in enumerate(qargs + cargs):
+            for ind, reg in enumerate(node.qargs + node.cargs):
                 # Add to the stacks of the qubits and
                 # cbits used in the gate.
                 reg_ints.append(bit_indices[reg])
