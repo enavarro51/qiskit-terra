@@ -239,6 +239,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
                 self.add_register(qr_ancilla)
 
     def _build(self):
+        # do not build the circuit if _data is already populated
         if self._valid:
             return
 

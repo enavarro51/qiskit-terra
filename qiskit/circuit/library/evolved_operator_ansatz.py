@@ -177,13 +177,11 @@ class EvolvedOperatorAnsatz(BlueprintCircuit):
             return np.zeros(self.reps * len(self.operators), dtype=float)
 
     def _build(self):
+        # do not build the circuit if _data is already populated
         if self._valid:
             return
 
         super()._build()
-
-        self._check_configuration()
-        #self._data = []
 
         # get the evolved operators as circuits
         from qiskit.opflow import PauliOp

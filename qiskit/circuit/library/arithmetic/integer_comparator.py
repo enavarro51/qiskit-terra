@@ -57,7 +57,6 @@ class IntegerComparator(BlueprintCircuit):
         """
         super().__init__(name=name)
 
-        #self._data = None
         self._value = None
         self._geq = None
         self._num_state_qubits = None
@@ -183,8 +182,9 @@ class IntegerComparator(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the comparator circuit."""
+        # do not build the circuit if _data is already populated
         if self._valid:
-            _return
+            return
 
         super()._build()
 

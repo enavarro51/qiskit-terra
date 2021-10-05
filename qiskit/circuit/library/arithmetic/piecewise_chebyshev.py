@@ -333,11 +333,6 @@ class PiecewiseChebyshev(BlueprintCircuit):
 
         super()._build()
 
-        #self._data = []
-
-        # check whether the configuration is valid
-        self._check_configuration()
-
         poly_r = PiecewisePolynomialPauliRotations(
             self.num_state_qubits, self.breakpoints, self.polynomials, name=self.name
         )

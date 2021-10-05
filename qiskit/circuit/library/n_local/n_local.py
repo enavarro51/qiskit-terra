@@ -133,7 +133,6 @@ class NLocal(BlueprintCircuit):
         self._skip_final_rotation_layer = skip_final_rotation_layer
         self._skip_unentangled_qubits = skip_unentangled_qubits
         self._initial_state, self._initial_state_circuit = None, None
-        #self._data = None
         self._bounds = None
 
         if int(reps) != reps:
@@ -726,9 +725,8 @@ class NLocal(BlueprintCircuit):
 
     def _invalidate(self):
         """Invalidate the current circuit build."""
-        #self._data = None
+        self._data = []
         self._parameter_table = ParameterTable()
-        self._valid = False
 
     def add_layer(
         self,
@@ -936,13 +934,11 @@ class NLocal(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the circuit."""
-        if not self._valid:
+        # do not build the circuit if _data is already populated
+        if self._valid:
             return
 
-        _ = self._check_configuration()
-
         super()._build()
-        #self._data = []
 
         if self.num_qubits == 0:
             return

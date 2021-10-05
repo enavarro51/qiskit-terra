@@ -158,7 +158,7 @@ class LinearPauliRotations(FunctionalPauliRotations):
         return valid
 
     def _build(self):
-        # check if we have to rebuild and if the configuration is valid
+        # do not build the circuit if _data is already populated
         if self._valid:
             return
 

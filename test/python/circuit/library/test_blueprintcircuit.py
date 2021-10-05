@@ -52,6 +52,9 @@ class MockBlueprint(BlueprintCircuit):
         return valid
 
     def _build(self):
+        if self._valid:
+            return
+
         super()._build()
 
         self.rx(Parameter("angle"), 0)
@@ -73,7 +76,7 @@ class TestBlueprintCircuit(QiskitTestCase):
 
         mock._invalidate()
         with self.subTest(msg="after invalidating"):
-            self.assertTrue(mock._data is None)
+            self.assertFalse(mock._valid)
             self.assertEqual(len(mock._parameter_table), 0)
 
         mock._build()

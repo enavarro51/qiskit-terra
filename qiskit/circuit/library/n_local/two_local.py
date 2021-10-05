@@ -302,3 +302,6 @@ class TwoLocal(NLocal):
         if self.num_qubits <= 1:
             return []
         return super().get_entangler_map(rep_num, block_num, num_block_qubits)
+
+    def _build(self):
+        super()._build()

@@ -315,10 +315,6 @@ class PolynomialPauliRotations(FunctionalPauliRotations):
             return
 
         super()._build()
-        #self._data = []
-
-        # check whether the configuration is valid
-        self._check_configuration()
 
         circuit = QuantumCircuit(*self.qregs, name=self.name)
         qr_state = circuit.qubits[: self.num_state_qubits]

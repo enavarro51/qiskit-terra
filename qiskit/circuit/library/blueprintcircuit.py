@@ -36,7 +36,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         that the circuit has not been built yet.
         """
         super().__init__(*regs, name=name)
-        #self._data = None
         self._qregs = []
         self._cregs = []
         self._qubits = []
@@ -60,19 +59,19 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @abstractmethod
     def _build(self) -> None:
         """Build the circuit."""
-        # do not build the circuit if _data is already populated
         if self._valid:
             return
 
-        #self._data = []
+        self._data = []
+        self._parameter_table = ParameterTable()
+        self.global_phase = 0
 
         # check whether the configuration is valid
-        self._check_configuration()
-        self._valid = True
+        self._valid = self._check_configuration()
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
-        #self._data = None
+        self._data = []
         self._parameter_table = ParameterTable()
         self.global_phase = 0
         self._valid = False
@@ -91,7 +90,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qubit_indices = {}
 
         self.add_register(*qregs)
-
         self._invalidate()
 
     @property
