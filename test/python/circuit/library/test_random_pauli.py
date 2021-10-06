@@ -60,9 +60,11 @@ class TestPauliTwoDesign(QiskitTestCase):
         """Test resizing the Random Pauli circuit preserves the gates."""
         circuit = PauliTwoDesign(1)
         top_gates = [op.name for op, _, _ in circuit.decompose().data]
+        print(circuit)
 
         circuit.num_qubits = 3
         decomposed = circuit.decompose()
+        print(decomposed)
         with self.subTest("assert existing gates remain"):
             new_top_gates = []
             for op, qargs, _ in decomposed:
@@ -75,10 +77,20 @@ class TestPauliTwoDesign(QiskitTestCase):
         """Test assigning parameters does not add an additional initial layer."""
         circuit = PauliTwoDesign(2)
         values = list(range(circuit.num_parameters))
+        print(values)
 
         bound0 = circuit.assign_parameters(values)
         bound1 = circuit.assign_parameters(values)
         bound2 = circuit.assign_parameters(values)
+        print(type(bound0), bound0._seed, bound0._rng, bound0._gates)
+        print(type(bound1), bound1._seed, bound1._rng, bound1._gates)
+        print(bound0._prepended_blocks)
+        print(bound0._prepended_entanglement)
+        print(bound1._prepended_blocks)
+        print(bound1._prepended_entanglement)
+        print(bound0)
+        print(bound1)
+        print(bound2)
 
         self.assertEqual(bound0, bound1)
         self.assertEqual(bound0, bound2)

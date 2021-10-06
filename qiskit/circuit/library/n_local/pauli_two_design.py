@@ -15,6 +15,7 @@
 from typing import Optional
 import numpy as np
 
+from qiskit.circuit.parametertable import ParameterTable
 from qiskit.circuit import QuantumCircuit
 
 
@@ -98,7 +99,9 @@ class PauliTwoDesign(TwoLocal):
 
     def _invalidate(self):
         self._rng = np.random.default_rng(self._seed)  # reset number generator
-        super()._invalidate()
+        self._valid = False
+        self._parameter_table = ParameterTable()
+        #super()._invalidate()
 
     def _build_rotation_layer(self, circuit, param_iter, i):
         """Build a rotation layer."""

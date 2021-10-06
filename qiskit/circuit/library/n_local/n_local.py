@@ -843,6 +843,7 @@ class NLocal(BlueprintCircuit):
             new = [parameters.get(param, param) for param in self.ordered_parameters]
             self._ordered_parameters = new
 
+        print(parameters)
         return super().assign_parameters(parameters, inplace=inplace)
 
     def _parameterize_block(
