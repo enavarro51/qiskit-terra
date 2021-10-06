@@ -245,6 +245,7 @@ class QFT(BlueprintCircuit):
     def _build(self) -> None:
         """Construct the circuit representing the desired state vector."""
         # do not build the circuit if _data is already populated
+        print('in qft build', self._valid, self._data)
         #if self._valid:
         #    return
 
@@ -275,3 +276,4 @@ class QFT(BlueprintCircuit):
 
         wrapped = circuit.to_instruction() if self.insert_barriers else circuit.to_gate()
         self.compose(wrapped, qubits=self.qubits, inplace=True)
+        print('end qft build')
