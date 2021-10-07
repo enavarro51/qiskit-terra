@@ -16,6 +16,7 @@ from typing import Optional
 import numpy as np
 
 from qiskit.circuit import QuantumCircuit, QuantumRegister
+from qiskit.circuit.parametertable import ParameterTable
 
 from ..blueprintcircuit import BlueprintCircuit
 
@@ -94,6 +95,8 @@ class QFT(BlueprintCircuit):
             insert_barriers: If True, barriers are inserted as visualization improvement.
             name: The name of the circuit.
         """
+        self._valid = False
+        self._data = []
         if name is None:
             name = "IQFT" if inverse else "QFT"
 
@@ -103,6 +106,8 @@ class QFT(BlueprintCircuit):
         self._insert_barriers = insert_barriers
         self._inverse = inverse
         self.num_qubits = num_qubits
+        #self._data = None
+        #self._valid = False
 
     @property
     def num_qubits(self) -> int:
@@ -196,6 +201,7 @@ class QFT(BlueprintCircuit):
         Args:
             do_swaps: If True, the final swaps are applied, if False not.
         """
+        print('in do_swaps', self._valid, self._data)
         if do_swaps != self._do_swaps:
             self._invalidate()
             self._do_swaps = do_swaps
@@ -242,15 +248,26 @@ class QFT(BlueprintCircuit):
 
         return valid
 
+    """def _invalidate(self):
+        print('in qft invalid', self._valid, id(self), id(self._data), self._data)
+        super()._invalidate()
+        print('after invalid super', self._valid, id(self), id(self._data), self._data)
+        #self._valid = False
+        #self._data = []
+        #self._global_phase = 0
+        #self._parameter_table = ParameterTable()"""
+
     def _build(self) -> None:
         """Construct the circuit representing the desired state vector."""
         # do not build the circuit if _data is already populated
-        print('in qft build', self._valid, self._data)
-        #if self._valid:
-        #    return
+        print('in qft build', self._valid, id(self), id(self._data), self._data)
+        if self._valid:
+            return
 
         super()._build()
-
+        self._valid = True
+        self._data = []
+        print('after super', self._valid, id(self), id(self._data), self._data)
         num_qubits = self.num_qubits
 
         if num_qubits == 0:
@@ -275,5 +292,6 @@ class QFT(BlueprintCircuit):
             circuit._data = circuit.inverse()
 
         wrapped = circuit.to_instruction() if self.insert_barriers else circuit.to_gate()
+        print('end qft build before compose', self._valid, id(self), id(self._data), self._data)
         self.compose(wrapped, qubits=self.qubits, inplace=True)
-        print('end qft build')
+        print('end qft build', self._valid, id(self), id(self._data), self._data)

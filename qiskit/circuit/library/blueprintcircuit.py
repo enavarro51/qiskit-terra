@@ -59,24 +59,24 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @abstractmethod
     def _build(self) -> None:
         """Build the circuit."""
-        print('in bp build', self._valid)
+        print('in bp build', self._valid, id(self), id(self._data), self._data)
         if self._valid:
             return
 
         self._data = []
-        self._parameter_table = ParameterTable()
-        self.global_phase = 0
 
         # check whether the configuration is valid
-        self._valid = self._check_configuration()
-        print('end bp build')
+        self._check_configuration()
+        self._valid = True
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
+        print('\nIN BP INVAL', id(self), id(self._data), self._data)
+        self._valid = False
         self._data = []
         self._parameter_table = ParameterTable()
         self.global_phase = 0
-        self._valid = False
+        print('After bp inval', id(self), id(self._data))
 
     @property
     def qregs(self):
@@ -86,7 +86,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @qregs.setter
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
-        print('in bp qregs', qregs)
         self._qregs = []
         self._qubits = []
         self._ancillas = []
@@ -97,7 +96,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
 
     @property
     def data(self):
-        print('in bp data', self._valid)
         if not self._valid:
             self._build()
         return super().data
@@ -110,7 +108,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
 
     @property
     def parameters(self) -> ParameterView:
-        print('in bp parameters', self._valid)
         if not self._valid:
             self._build()
         return super().parameters
@@ -121,13 +118,11 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         return super().qasm(formatted, filename, encoding)
 
     def append(self, instruction, qargs=None, cargs=None):
-        print('in bp append', self._valid)
         if not self._valid:
             self._build()
         return super().append(instruction, qargs, cargs)
 
     def compose(self, other, qubits=None, clbits=None, front=False, inplace=False, wrap=False):
-        print('in bp compose', self._valid)
         if not self._valid:
             self._build()
         return super().compose(other, qubits, clbits, front, inplace, wrap)
@@ -149,7 +144,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         return super().size(*args, **kwargs)
 
     def to_instruction(self, parameter_map=None, label=None):
-        print('in bp to inst', self._valid)
         if not self._valid:
             self._build()
         return super().to_instruction(parameter_map, label=label)

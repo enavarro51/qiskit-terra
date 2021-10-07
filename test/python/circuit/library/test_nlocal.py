@@ -706,9 +706,11 @@ class TestTwoLocal(QiskitTestCase):
         for i in range(num_qubits):
             expected.rz(next(param_iter), i)
 
+        print('\n\nIn test', expected)
         library = ExcitationPreserving(
             num_qubits, reps=reps, entanglement=entanglement
         ).assign_parameters(parameters)
+        print('\nlibrary', library)
 
         self.assertCircuitEqual(library, expected)
 
