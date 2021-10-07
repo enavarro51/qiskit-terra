@@ -725,19 +725,11 @@ class NLocal(BlueprintCircuit):
         self._bounds = bounds
 
     def _invalidate(self):
-        """Invalidate the current circuit build."""
-        print('in nl inval', self._data)
+        #    """Invalidate the current circuit build."""
+        #super()._invalidate()
         self._data = []
+        #    #self._parameter_table = ParameterTable()
         #self._valid = False
-        self._parameter_table = ParameterTable()
-        print('end nl inval', self._data)
-
-    #def _invalidate(self):
-    #    """Invalidate the current circuit build."""
-    #    super()._invalidate()
-    #    #self._data = []
-    #    #self._parameter_table = ParameterTable()
-    #    #self._valid = False
 
     def add_layer(
         self,
@@ -824,8 +816,8 @@ class NLocal(BlueprintCircuit):
             AttributeError: If the parameters are given as list and do not match the number
                 of parameters.
         """
-        #if not self._valid:
-        self._build()
+        if not self._valid:
+            self._build()
 
         if not isinstance(parameters, dict):
             if len(parameters) != self.num_parameters:
@@ -949,7 +941,7 @@ class NLocal(BlueprintCircuit):
         """Build the circuit."""
         # do not build the circuit if _data is already populated
         print("\n\nin nl build", self._data)
-        if self._data:
+        if self._valid:
             return
 
         super()._build()

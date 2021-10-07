@@ -248,25 +248,25 @@ class QFT(BlueprintCircuit):
 
         return valid
 
-    """def _invalidate(self):
+    def _invalidate(self):
         print('in qft invalid', self._valid, id(self), id(self._data), self._data)
-        super()._invalidate()
+        #super()._invalidate()
         print('after invalid super', self._valid, id(self), id(self._data), self._data)
-        #self._valid = False
-        #self._data = []
-        #self._global_phase = 0
-        #self._parameter_table = ParameterTable()"""
+        self._valid = False
+        self._data = []
+        self._global_phase = 0
+        self._parameter_table = ParameterTable()
 
     def _build(self) -> None:
         """Construct the circuit representing the desired state vector."""
         # do not build the circuit if _data is already populated
         print('in qft build', self._valid, id(self), id(self._data), self._data)
-        if self._valid:
+        if self._data:
             return
 
         super()._build()
-        self._valid = True
-        self._data = []
+        #self._valid = True
+        #self._data = []
         print('after super', self._valid, id(self), id(self._data), self._data)
         num_qubits = self.num_qubits
 

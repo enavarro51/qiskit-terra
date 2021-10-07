@@ -100,7 +100,7 @@ class PauliTwoDesign(TwoLocal):
 
     def _invalidate(self):
         self._rng = np.random.default_rng(self._seed)  # reset number generator
-        #self._data = []
+        self._data = []
         #self._valid = False
         super()._invalidate()
 
