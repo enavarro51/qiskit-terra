@@ -115,6 +115,7 @@ class NLocal(BlueprintCircuit):
             ValueError: If reps parameter is less than or equal to 0.
             TypeError: If reps parameter is not an int value.
         """
+        self._valid = False
         super().__init__(name=name)
 
         self._num_qubits = None
@@ -175,6 +176,7 @@ class NLocal(BlueprintCircuit):
         if self._num_qubits != num_qubits:
             # invalidate the circuit
             self._invalidate()
+            print('in nl inval num_qubits')
             self._num_qubits = num_qubits
             self.qregs = [QuantumRegister(num_qubits, name="q")]
 
@@ -421,6 +423,7 @@ class NLocal(BlueprintCircuit):
         # if it is the same as before we can leave the NLocal instance as it is
         if insert_barriers is not self._insert_barriers:
             self._invalidate()
+            print('in nl inval insert barr')
             self._insert_barriers = insert_barriers
 
     def get_unentangled_qubits(self) -> Set[int]:
@@ -506,6 +509,7 @@ class NLocal(BlueprintCircuit):
             raise ValueError("The repetitions should be larger than or equal to 0")
         if repetitions != self._reps:
             self._invalidate()
+            print('in nl inval repx')
             self._reps = repetitions
 
     def print_settings(self) -> str:
@@ -730,6 +734,8 @@ class NLocal(BlueprintCircuit):
         self._data = []
         #    #self._parameter_table = ParameterTable()
         #self._valid = False
+        print('in nl inval', self._valid, id(self._data), self._data)
+        pass
 
     def add_layer(
         self,
@@ -940,12 +946,13 @@ class NLocal(BlueprintCircuit):
     def _build(self) -> None:
         """Build the circuit."""
         # do not build the circuit if _data is already populated
-        print("\n\nin nl build", self._data)
+        print("\n\nin nl build", self.name, self._valid, id(self._data), self._data)
         if self._valid:
             return
 
         super()._build()
 
+        self._data = []
         if self.num_qubits == 0:
             return
 
@@ -995,7 +1002,7 @@ class NLocal(BlueprintCircuit):
             block = circuit.to_instruction()
 
         self.append(block, self.qubits)
-        print("\n\nend nl build", self._data)
+        print("\n\nend nl build", self._valid, id(self._data), self._data)
         self._valid = True
 
     # pylint: disable=unused-argument
