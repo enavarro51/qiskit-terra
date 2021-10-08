@@ -103,6 +103,16 @@ class BlueprintCircuit(QuantumCircuit, ABC):
             self._build()
         return super().data
 
+    def decompose(self, gates_to_decompose=None):
+        if self._data is None:
+            self._build()
+        return super().decompose(gates_to_decompose)
+
+    def draw(self, *args, **kwargs):
+        if self._data is None:
+            self._build()
+        return super().draw(*args, **kwargs)
+
     @property
     def num_parameters(self) -> int:
         print('in num param', self._valid, self._data)
