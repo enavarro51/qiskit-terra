@@ -728,7 +728,7 @@ class NLocal(BlueprintCircuit):
         #super()._invalidate()
         self._data = []
         #    #self._parameter_table = ParameterTable()
-        #self._valid = False
+        self._valid = False
         print('in nl inval', self._valid, id(self._data), self._data)
         pass
 
