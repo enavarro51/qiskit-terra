@@ -1240,21 +1240,28 @@ class QuantumCircuit:
     def _update_parameter_table(self, instruction: Instruction) -> Instruction:
 
         for param_index, param in enumerate(instruction.params):
+            print('\n\nin update param 0', self._parameters)
             if isinstance(param, ParameterExpression):
                 current_parameters = self._parameter_table
 
                 for parameter in param.parameters:
                     if parameter in current_parameters:
+                        print('\n\nin update param 1', self._parameter_table)
+                        print(instruction)
                         if not self._check_dup_param_spec(
                             self._parameter_table[parameter], instruction, param_index
                         ):
                             self._parameter_table[parameter].append((instruction, param_index))
+                        print('after 1', self._parameter_table)
                     else:
+                        print('\nin update param 2', self._parameter_table)
+                        print(instruction)
                         if parameter.name in self._parameter_table.get_names():
                             raise CircuitError(
                                 f"Name conflict on adding parameter: {parameter.name}"
                             )
                         self._parameter_table[parameter] = [(instruction, param_index)]
+                        print('after 2', self._parameter_table)
 
                         # clear cache if new parameter is added
                         self._parameters = None
@@ -2426,7 +2433,7 @@ class QuantumCircuit:
             # unroll the parameter dictionary (needed if e.g. it contains a ParameterVector)
             unrolled_param_dict = self._unroll_param_dict(parameters)
             unsorted_parameters = self._unsorted_parameters()
-            print(unrolled_param_dict)
+            print('in assign', unrolled_param_dict)
             print(unsorted_parameters)
 
             # check that all param_dict items are in the _parameter_table for this circuit
@@ -2517,6 +2524,7 @@ class QuantumCircuit:
                 replace instances of ``parameter``.
         """
         # parameter might be in global phase only
+        print('in _assign 0', parameter, self._parameter_table)
         if parameter in self._parameter_table.keys():
             for instr, param_index in self._parameter_table[parameter]:
                 new_param = instr.params[param_index].assign(parameter, value)
@@ -2543,6 +2551,7 @@ class QuantumCircuit:
             and parameter in self.global_phase.parameters
         ):
             self.global_phase = self.global_phase.assign(parameter, value)
+        print('in _assign 1', self._parameter_table)
 
         # clear parameter cache
         self._parameters = None
