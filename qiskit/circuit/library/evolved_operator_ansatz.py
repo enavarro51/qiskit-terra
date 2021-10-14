@@ -152,12 +152,10 @@ class EvolvedOperatorAnsatz(NLocal):
             return np.zeros(self.reps * len(self.operators), dtype=float)
 
     def _build(self):
-        if self._valid:
+        if self._data:
             return
 
         super()._build()
-        # need to check configuration here to ensure the operators are not None
-        self._check_configuration()
 
         coeff = Parameter("c")
         circuits = []

@@ -247,7 +247,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
                 self.add_register(qr_ancilla)
 
     def _build(self):
-        if self._valid:
+        if self._data:
             return
 
         super()._build()
@@ -294,5 +294,4 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
                 circuit.append(comp.to_gate().inverse(), qr[:] + qr_helper[: comp.num_ancillas])
         print('build qubits')
         self.append(circuit.to_gate(), self.qubits)
-        self.valid = True
         print('end pw build')

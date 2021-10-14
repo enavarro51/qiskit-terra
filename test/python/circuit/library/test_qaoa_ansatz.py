@@ -63,10 +63,13 @@ class TestQAOAAnsatz(QiskitTestCase):
         """Test circuit with a custom mixer as a circuit"""
         mixer = QuantumCircuit(1)
         mixer.ry(1, 0)
+        print('\n', mixer)
         circuit = QAOAAnsatz(cost_operator=I, reps=1, mixer_operator=mixer)
+        print('\n', circuit)
 
         parameters = circuit.parameters
         circuit = circuit.decompose()
+        print('\n', circuit)
         self.assertEqual(0, len(parameters))
         self.assertIsInstance(circuit.data[0][0], HGate)
         self.assertIsInstance(circuit.data[1][0], RYGate)

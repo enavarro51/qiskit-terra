@@ -98,7 +98,7 @@ class PauliTwoDesign(TwoLocal):
 
     def _invalidate(self):
         self._rng = np.random.default_rng(self._seed)  # reset number generator
-        super()._invalidate()
+        #super()._invalidate()
 
     def _build_rotation_layer(self, circuit, param_iter, i):
         """Build a rotation layer."""

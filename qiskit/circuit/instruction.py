@@ -349,7 +349,7 @@ class Instruction:
             return self.copy()
 
         reverse_inst = self.copy(name=self.name + "_reverse")
-        reverse_inst._definition = self._definition.reverse_ops()
+        reverse_inst.definition = self._definition.reverse_ops()
 
         return reverse_inst
 

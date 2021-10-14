@@ -286,7 +286,8 @@ class QuantumCircuit:
             Instruction (or subclass) object, qargs is a list of Qubit objects, and cargs is a
             list of Clbit objects.
         """
-        return QuantumCircuitData(self)
+        return([(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values()])
+        #return QuantumCircuitData(self)
 
     @data.setter
     def data(
@@ -1061,11 +1062,12 @@ class QuantumCircuit:
 
     def __getitem__(self, item):
         """Return indexed operation."""
-        try:
+        return([(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values()])[item]
+        """try:
             ret = (self._node_idx_map[item].op, self._node_idx_map[item].qargs, self._node_idx_map[item].cargs)
         except KeyError:
             raise IndexError
-        return ret
+        return ret"""
 
     @staticmethod
     def cast(value: S, type_: Callable[..., T]) -> Union[S, T]:
@@ -2335,9 +2337,11 @@ class QuantumCircuit:
 
     def _unsorted_parameters(self) -> Set[Parameter]:
         """Efficiently get all parameters in the circuit, without any sorting overhead."""
+        print('in unsorted', self._parameter_table)
         parameters = set(self._parameter_table)
         if isinstance(self.global_phase, ParameterExpression):
             parameters.update(self.global_phase.parameters)
+        print(parameters)
         return parameters
 
     def assign_parameters(
@@ -2422,6 +2426,8 @@ class QuantumCircuit:
             # unroll the parameter dictionary (needed if e.g. it contains a ParameterVector)
             unrolled_param_dict = self._unroll_param_dict(parameters)
             unsorted_parameters = self._unsorted_parameters()
+            print(unrolled_param_dict)
+            print(unsorted_parameters)
 
             # check that all param_dict items are in the _parameter_table for this circuit
             params_not_in_circuit = [

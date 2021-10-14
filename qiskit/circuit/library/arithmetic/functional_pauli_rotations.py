@@ -80,8 +80,6 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         Returns:
             The number of state qubits.
         """
-        #if not self._valid:
-        #    self._build()
         return self._num_state_qubits
 
     @num_state_qubits.setter

@@ -187,11 +187,10 @@ class IntegerComparator(BlueprintCircuit):
     def _build(self) -> None:
         """Build the comparator circuit."""
         print('in ic build')
-        if self._valid:
+        if self._data:
             return
 
         super()._build()
-        self._check_configuration()
 
         qr_state = self.qubits[: self.num_state_qubits]
         q_compare = self.qubits[self.num_state_qubits]
@@ -258,5 +257,4 @@ class IntegerComparator(BlueprintCircuit):
                 circuit.x(q_compare)
 
         self.append(circuit.to_gate(), self.qubits)
-        self._valid = True
         print('end ic build')

@@ -133,6 +133,7 @@ class NLocal(BlueprintCircuit):
         self._skip_final_rotation_layer = skip_final_rotation_layer
         self._skip_unentangled_qubits = skip_unentangled_qubits
         self._initial_state, self._initial_state_circuit = None, None
+        self._data = None
         self._bounds = None
 
         if int(reps) != reps:
@@ -720,7 +721,7 @@ class NLocal(BlueprintCircuit):
 
     def _invalidate(self):
         """Invalidate the current circuit build."""
-        super()._invalidate()
+        self._data = None
         self._parameter_table = ParameterTable()
 
     def add_layer(
@@ -765,7 +766,7 @@ class NLocal(BlueprintCircuit):
                 self.num_qubits = num_qubits
 
         # modify the circuit accordingly
-        if self._data and front is False:
+        if self._data is not None and front is False:
             if self._insert_barriers and len(self._data) > 0:
                 self.barrier()
 
@@ -806,7 +807,8 @@ class NLocal(BlueprintCircuit):
             AttributeError: If the parameters are given as list and do not match the number
                 of parameters.
         """
-        if not self._valid:
+        print('in assign nlocal', self._data)
+        if self._data is not None:
             self._build()
 
         return super().assign_parameters(parameters, inplace=inplace)
@@ -815,6 +817,7 @@ class NLocal(BlueprintCircuit):
         self, block, param_iter=None, rep_num=None, block_num=None, indices=None, params=None
     ):
         """Convert ``block`` to a circuit of correct width and parameterized using the iterator."""
+        print('\nin paramerize', block, param_iter, indices, params)
         if self._overwrite_block_parameters:
             # check if special parameters should be used
             # pylint: disable=assignment-from-none
@@ -824,6 +827,7 @@ class NLocal(BlueprintCircuit):
                 params = [next(param_iter) for _ in range(len(get_parameters(block)))]
 
             update = dict(zip(block.parameters, params))
+            print('\nupdate', update)
             return block.assign_parameters(update)
 
         return block.copy()
@@ -836,6 +840,7 @@ class NLocal(BlueprintCircuit):
 
         # iterate over all rotation blocks
         for j, block in enumerate(self.rotation_blocks):
+            print('\nrotation', self._rotation_blocks[0])
             # create a new layer
             layer = QuantumCircuit(*self.qregs)
 
@@ -845,6 +850,7 @@ class NLocal(BlueprintCircuit):
                 list(range(k * block.num_qubits, (k + 1) * block.num_qubits))
                 for k in range(self.num_qubits // block.num_qubits)
             ]
+            print('\nblock_indices', block_indices)
 
             # if unentangled qubits should not be acted on, remove all operations that
             # touch an unentangled qubit
@@ -854,7 +860,8 @@ class NLocal(BlueprintCircuit):
                     for indices in block_indices
                     if set(indices).isdisjoint(unentangled_qubits)
                 ]
-
+            #for x in param_iter:
+            #    print(x)
             # apply the operations in the layer
             for indices in block_indices:
                 parameterized_block = self._parameterize_block(block, param_iter, i, j, indices)
@@ -900,12 +907,10 @@ class NLocal(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the circuit."""
-        if self._valid:
+        if self._data is not None:
             return
 
         super()._build()
-
-        _ = self._check_configuration()
 
         if self.num_qubits == 0:
             return

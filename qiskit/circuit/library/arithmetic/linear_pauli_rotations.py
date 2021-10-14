@@ -161,6 +161,9 @@ class LinearPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         # check if we have to rebuild and if the configuration is valid
+        if self._data:
+            return
+
         super()._build()
 
         circuit = QuantumCircuit(*self.qregs, name=self.name)
