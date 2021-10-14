@@ -1229,7 +1229,7 @@ class QuantumCircuit:
         idx = next(self._node_idx_curr)
         self._node_idx_map[idx] = node
 
-        self._update_parameter_table(instruction)
+        #self._update_parameter_table(instruction)
 
         # mark as normal circuit if a new instruction is added
         self.duration = None
