@@ -176,7 +176,6 @@ class NLocal(BlueprintCircuit):
         if self._num_qubits != num_qubits:
             # invalidate the circuit
             self._invalidate()
-            print('in nl inval num_qubits')
             self._num_qubits = num_qubits
             self.qregs = [QuantumRegister(num_qubits, name="q")]
 
@@ -423,7 +422,6 @@ class NLocal(BlueprintCircuit):
         # if it is the same as before we can leave the NLocal instance as it is
         if insert_barriers is not self._insert_barriers:
             self._invalidate()
-            print('in nl inval insert barr')
             self._insert_barriers = insert_barriers
 
     def get_unentangled_qubits(self) -> Set[int]:
@@ -509,7 +507,6 @@ class NLocal(BlueprintCircuit):
             raise ValueError("The repetitions should be larger than or equal to 0")
         if repetitions != self._reps:
             self._invalidate()
-            print('in nl inval repx')
             self._reps = repetitions
 
     def print_settings(self) -> str:
@@ -725,12 +722,8 @@ class NLocal(BlueprintCircuit):
 
     def _invalidate(self):
         #    """Invalidate the current circuit build."""
-        #super()._invalidate()
         self._data = []
-        #    #self._parameter_table = ParameterTable()
         self._valid = False
-        print('in nl inval', self._valid, id(self._data), self._data)
-        pass
 
     def add_layer(
         self,
@@ -770,7 +763,6 @@ class NLocal(BlueprintCircuit):
         if isinstance(entanglement, list):
             num_qubits = 1 + max(max(indices) for indices in entanglement)
             if num_qubits > self.num_qubits:
-                print('inval call add_layer / num_qubits', self._data)
                 self._invalidate()  # rebuild circuit
                 self.num_qubits = num_qubits
 
@@ -793,7 +785,6 @@ class NLocal(BlueprintCircuit):
             self.compose(layer, inplace=True)
         else:
             # cannot prepend a block currently, just rebuild
-            print('inval call else add_layer', self._data)
             self._invalidate()
 
         return self
@@ -912,7 +903,6 @@ class NLocal(BlueprintCircuit):
     def _build(self) -> None:
         """Build the circuit."""
         # do not build the circuit if _data is already populated
-        print("\n\nin nl build", self.name, self._valid, id(self._data), self._data)
         if self._valid:
             return
 
@@ -977,7 +967,6 @@ class NLocal(BlueprintCircuit):
             block = circuit.to_instruction()
 
         self.append(block, self.qubits)
-        print("\n\nend nl build", self._valid, id(self._data), self._data)
         self._valid = True
 
     # pylint: disable=unused-argument

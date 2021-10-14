@@ -24,7 +24,6 @@ class QuantumCircuitData(MutableSequence):
     QuantumCircuit.data while maintaining the interface of a python list."""
 
     def __init__(self, circuit):
-        print('in qc data', id(self), id(circuit._data))
         self._circuit = circuit
 
     def __getitem__(self, i):

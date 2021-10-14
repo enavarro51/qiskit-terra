@@ -60,7 +60,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @abstractmethod
     def _build(self) -> None:
         """Build the circuit."""
-        print('in bp build', self._valid, id(self), id(self._data), self._data)
         if self._valid:
             return
 
@@ -73,12 +72,10 @@ class BlueprintCircuit(QuantumCircuit, ABC):
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
-        print('\nIN BP INVAL', id(self), id(self._data), self._data)
         self._valid = False
         self._data = []
         self._parameter_table = ParameterTable()
         self.global_phase = 0
-        print('After bp inval', id(self), id(self._data))
 
     @property
     def qregs(self):
@@ -98,7 +95,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
 
     @property
     def data(self):
-        print('in data', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().data
@@ -115,38 +111,32 @@ class BlueprintCircuit(QuantumCircuit, ABC):
 
     @property
     def num_parameters(self) -> int:
-        print('in num param', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().num_parameters
 
     @property
     def parameters(self) -> ParameterView:
-        print('in param', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().parameters
 
     def qasm(self, formatted=False, filename=None, encoding=None):
-        print('in qasm', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().qasm(formatted, filename, encoding)
 
     def append(self, instruction, qargs=None, cargs=None):
-        print('in append', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().append(instruction, qargs, cargs)
 
     def compose(self, other, qubits=None, clbits=None, front=False, inplace=False, wrap=False):
-        print('in compose', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().compose(other, qubits, clbits, front, inplace, wrap)
 
     def inverse(self):
-        print('in inverse', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().inverse()
@@ -158,49 +148,41 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         return self.data[item]
 
     def size(self, *args, **kwargs):
-        print('in size', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().size(*args, **kwargs)
 
     def to_instruction(self, parameter_map=None, label=None):
-        print('in to_inst', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().to_instruction(parameter_map, label=label)
 
     def to_gate(self, parameter_map=None, label=None):
-        print('in to_gate', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().to_gate(parameter_map, label=label)
 
     def depth(self, *args, **kwargs):
-        print('in depth', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().depth(*args, **kwargs)
 
     def count_ops(self):
-        print('in count-ops', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().count_ops()
 
     def num_nonlocal_gates(self):
-        print('in nonlocal', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().num_nonlocal_gates()
 
     def num_connected_components(self, unitary_only=False):
-        print('in num conn', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().num_connected_components(unitary_only=unitary_only)
 
     def copy(self, name=None):
-        print('in copy', self._valid, self._data)
         if not self._valid:
             self._build()
         return super().copy(name=name)

@@ -2289,7 +2289,6 @@ class QuantumCircuit:
 
     @property
     def num_parameters(self) -> int:
-        print('in qc num param', id(self), id(self._data))
         """Convenience function to get the number of parameter objects in the circuit."""
         return len(self._unsorted_parameters())
 
