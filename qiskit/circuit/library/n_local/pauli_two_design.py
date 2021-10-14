@@ -77,7 +77,6 @@ class PauliTwoDesign(TwoLocal):
     ):
         from qiskit.circuit.library import RYGate  # pylint: disable=cyclic-import
 
-        self._valid = False
         # store a random number generator
         self._seed = seed
         self._rng = np.random.default_rng(seed)
@@ -100,9 +99,6 @@ class PauliTwoDesign(TwoLocal):
 
     def _invalidate(self):
         self._rng = np.random.default_rng(self._seed)  # reset number generator
-        self._data = []
-        #self._valid = False
-        super()._invalidate()
 
     def _build_rotation_layer(self, circuit, param_iter, i):
         """Build a rotation layer."""

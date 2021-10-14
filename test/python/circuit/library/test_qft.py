@@ -41,7 +41,6 @@ class TestQFT(QiskitTestCase):
             qft.compose(circuit, inplace=True)
 
         simulated = Operator(qft)
-        print(simulated)
 
         num_qubits = num_qubits or qft.num_qubits
         expected = np.empty((2 ** num_qubits, 2 ** num_qubits), dtype=complex)
@@ -56,7 +55,6 @@ class TestQFT(QiskitTestCase):
 
         if inverse:
             expected = np.conj(expected)
-        print(expected)
 
         expected = Operator(expected)
 

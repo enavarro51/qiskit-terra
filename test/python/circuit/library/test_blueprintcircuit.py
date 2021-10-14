@@ -52,17 +52,13 @@ class MockBlueprint(BlueprintCircuit):
         return valid
 
     def _build(self):
-        print('\nin bp test build', self._valid, self._data)
         if self._valid:
             return
 
         super()._build()
-        print('\nafter super bp test build', self._valid, self._data)
 
         self.rx(Parameter("angle"), 0)
-        print('\nrx post bp test build', self._valid, self._parameter_table)
         self.h(self.qubits)
-        print('\nh bp test build', self._valid, self._parameter_table)
 
 
 @ddt

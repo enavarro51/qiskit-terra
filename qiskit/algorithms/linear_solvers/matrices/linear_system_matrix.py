@@ -132,7 +132,3 @@ class LinearSystemMatrix(BlueprintCircuit, ABC):
             The quantum circuit implementing powers of the unitary.
         """
         raise NotImplementedError
-
-    def _build(self):
-        """Build method for using super"""
-        super()._build()

@@ -115,7 +115,6 @@ class NLocal(BlueprintCircuit):
             ValueError: If reps parameter is less than or equal to 0.
             TypeError: If reps parameter is not an int value.
         """
-        self._valid = False
         super().__init__(name=name)
 
         self._num_qubits = None
@@ -707,7 +706,6 @@ class NLocal(BlueprintCircuit):
             parameter in the corresponding direction. If None is returned, problem is fully
             unbounded.
         """
-        #if not self._valid:
         self._build()
         return self._bounds
 
@@ -723,6 +721,7 @@ class NLocal(BlueprintCircuit):
     def _invalidate(self):
         #    """Invalidate the current circuit build."""
         self._data = []
+        self._parameter_table = ParameterTable()
         self._valid = False
 
     def add_layer(
@@ -967,7 +966,6 @@ class NLocal(BlueprintCircuit):
             block = circuit.to_instruction()
 
         self.append(block, self.qubits)
-        self._valid = True
 
     # pylint: disable=unused-argument
     def _parameter_generator(self, rep: int, block: int, indices: List[int]) -> Optional[Parameter]:

@@ -112,7 +112,3 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
             The minimal number of ancillas required.
         """
         return 0
-
-    def _build(self):
-        """Needed to call BlueprintCircuit _build"""
-        super()._build()
