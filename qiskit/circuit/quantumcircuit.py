@@ -316,7 +316,7 @@ class QuantumCircuit:
             self._node_idx_map[key].qargs = qargs
             self._node_idx_map[key].cargs = cargs
 
-            self._update_parameter_table(inst)
+            #self._update_parameter_table(inst)
 
     @property
     def calibrations(self) -> dict:
@@ -887,8 +887,8 @@ class QuantumCircuit:
         if front:
             dest._parameter_table.clear()
 
-        for node in dest._node_idx_map.values():
-            dest._update_parameter_table(node.op)
+        #for node in dest._node_idx_map.values():
+        #    dest._update_parameter_table(node.op)
 
         for gate, cals in other.calibrations.items():
             dest._calibrations[gate].update(cals)
@@ -1229,7 +1229,7 @@ class QuantumCircuit:
         idx = next(self._node_idx_curr)
         self._node_idx_map[idx] = node
 
-        #self._update_parameter_table(instruction)
+        self._update_parameter_table(instruction)
 
         # mark as normal circuit if a new instruction is added
         self.duration = None
@@ -2115,7 +2115,7 @@ class QuantumCircuit:
         cpy._node_idx_curr = itertools.count()
         cpy._data = self._copy_data()
         for node in cpy._data.topological_op_nodes():
-            cpy._update_parameter_table(node.op)
+            #cpy._update_parameter_table(node.op)
             idx = next(cpy._node_idx_curr)
             cpy._node_idx_map[idx] = node
 
