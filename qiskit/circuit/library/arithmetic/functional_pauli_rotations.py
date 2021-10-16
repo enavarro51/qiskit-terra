@@ -70,7 +70,7 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         if self._basis is None or basis != self._basis:
             if basis not in ["x", "y", "z"]:
                 raise ValueError(f"The provided basis must be X, Y or Z, not {basis}")
-            self._invalidate()
+            #self._invalidate()
             self._basis = basis
 
     @property
@@ -94,9 +94,10 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         """
         print('in fp num_state', self._num_state_qubits, num_state_qubits)
         if self._num_state_qubits is None or num_state_qubits != self._num_state_qubits:
-            self._invalidate()
+            #self._invalidate()
             self._num_state_qubits = num_state_qubits
 
+            print('in fp num_state', self._data)
             self._reset_registers(num_state_qubits)
 
     @abstractmethod

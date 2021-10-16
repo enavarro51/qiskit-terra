@@ -19,6 +19,7 @@ import numpy as np
 
 from qiskit.circuit import QuantumRegister, AncillaRegister, QuantumCircuit
 from qiskit.circuit.exceptions import CircuitError
+from qiskit.dagcircuit import DAGCircuit
 
 from .functional_pauli_rotations import FunctionalPauliRotations
 from .linear_pauli_rotations import LinearPauliRotations
@@ -106,7 +107,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
         Args:
             breakpoints: The new breakpoints.
         """
-        self._invalidate()
+        #self._invalidate()
         self._breakpoints = breakpoints
 
         print('break', self._breakpoints, self.num_state_qubits)
@@ -129,7 +130,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
         Args:
             slopes: The new slopes.
         """
-        self._invalidate()
+        #self._invalidate()
         self._slopes = slopes
 
     @property
@@ -148,7 +149,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
         Args:
             offsets: The new offsets.
         """
-        self._invalidate()
+        #self._invalidate()
         self._offsets = offsets
 
     @property
@@ -232,8 +233,10 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
 
     def _reset_registers(self, num_state_qubits: Optional[int]) -> None:
         self.qregs = []
-
-        print('in reset', num_state_qubits)
+        if self._data is None:
+            #elf._data = DAGCircuit()
+            self._build()
+        print('in reset', self._data, num_state_qubits)
         if num_state_qubits is not None:
             qr_state = QuantumRegister(num_state_qubits)
             qr_target = QuantumRegister(1)

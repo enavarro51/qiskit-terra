@@ -817,7 +817,7 @@ class NLocal(BlueprintCircuit):
         self, block, param_iter=None, rep_num=None, block_num=None, indices=None, params=None
     ):
         """Convert ``block`` to a circuit of correct width and parameterized using the iterator."""
-        print('\nin paramerize', block, param_iter, indices, params)
+        print('\nin paramerize', params)
         if self._overwrite_block_parameters:
             # check if special parameters should be used
             # pylint: disable=assignment-from-none
@@ -840,7 +840,6 @@ class NLocal(BlueprintCircuit):
 
         # iterate over all rotation blocks
         for j, block in enumerate(self.rotation_blocks):
-            print('\nrotation', self._rotation_blocks[0])
             # create a new layer
             layer = QuantumCircuit(*self.qregs)
 

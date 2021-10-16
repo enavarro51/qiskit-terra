@@ -44,7 +44,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qubits = []
         self._qubit_indices = dict()
         self._valid = False
-        self._data = None
+        self._data = DAGCircuit()
         print('end bp init')
 
     @abstractmethod
@@ -78,8 +78,8 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         #self._data.add_clbits(clbits)
 
         # check whether the configuration is valid
-        self._parameter_table = ParameterTable()
-        self._global_phase = 0
+        #self._parameter_table = ParameterTable()
+        #self._global_phase = 0
         self._valid = self._check_configuration()
         print('after bp build')
 
@@ -107,7 +107,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @qregs.setter
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
-        print('in bp qregs')
+        print('in bp qregs', self._data)
         self._data = DAGCircuit()
         print(qregs)
         self._qregs = []
@@ -116,7 +116,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qubit_indices = {}
 
         self.add_register(*qregs)
-        print(self._qregs)
+        print('in bp after add reg', self._data, self._data.qregs, self._qregs)
 
         self._invalidate()
 
