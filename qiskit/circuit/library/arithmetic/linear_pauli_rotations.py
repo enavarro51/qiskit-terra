@@ -66,7 +66,6 @@ class LinearPauliRotations(FunctionalPauliRotations):
             basis: The type of Pauli rotation ('X', 'Y', 'Z').
             name: The name of the circuit object.
         """
-        #print('in lp')
         super().__init__(num_state_qubits=num_state_qubits, basis=basis, name=name)
 
         # define internal parameters
@@ -76,7 +75,6 @@ class LinearPauliRotations(FunctionalPauliRotations):
         # store parameters
         self.slope = slope
         self.offset = offset
-        #print('end lp init')
 
     @property
     def slope(self) -> float:
@@ -161,7 +159,7 @@ class LinearPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         # check if we have to rebuild and if the configuration is valid
-        if self._data:
+        if self._data is not None:
             return
 
         super()._build()
@@ -188,4 +186,3 @@ class LinearPauliRotations(FunctionalPauliRotations):
                 circuit.crz(self.slope * pow(2, i), q_i, qr_target)
 
         self.append(circuit.to_gate(), self.qubits)
-        #print('end linear build')

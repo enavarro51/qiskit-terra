@@ -226,7 +226,7 @@ class WeightedAdder(BlueprintCircuit):
         return valid
 
     def _build(self):
-        if self._data:
+        if self._data is not None:
             return
 
         super()._build()

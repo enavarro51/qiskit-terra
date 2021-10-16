@@ -230,7 +230,6 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
             if raise_on_failure:
                 raise AttributeError("The number of qubits has not been set.")
 
-        print('num qubits', self.num_qubits)
         if self.num_qubits < self.num_state_qubits + 1:
             valid = False
             if raise_on_failure:
@@ -264,7 +263,7 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         # do not build the circuit if _data is already populated
-        if self._data:
+        if self._data is not None:
             return
 
         super()._build()

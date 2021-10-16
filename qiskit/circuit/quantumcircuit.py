@@ -310,14 +310,13 @@ class QuantumCircuit:
         self._parameter_table = ParameterTable()
 
         for inst, qargs, cargs in data_input:
-            #self.append(inst, qargs, cargs)
             key = next(self._node_idx_curr)
             self._node_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
             self._node_idx_map[key].op = inst
             self._node_idx_map[key].qargs = qargs
             self._node_idx_map[key].cargs = cargs
 
-            #self._update_parameter_table(inst)
+            self._update_parameter_table(inst)
 
     @property
     def calibrations(self) -> dict:
@@ -886,7 +885,7 @@ class QuantumCircuit:
         dest._data.compose(other._data, qubits=qubits, clbits=clbits, front=front, inplace=True)
 
         #if front:
-        #dest._parameter_table.clear()
+        #   dest._parameter_table.clear()
 
         #for node in dest._node_idx_map.values():
         #    dest._update_parameter_table(node.op)
@@ -1232,11 +1231,7 @@ class QuantumCircuit:
         self._node_idx_map[idx] = node
 
         #self._parameter_table.clear()
-        print('\n\nbefore update_param in _append: ', inst)
-        print(self._parameter_table)
         self._update_parameter_table(inst)
-        print('\nafter update_param in _append: ', inst)
-        print(self._parameter_table)
 
         # mark as normal circuit if a new instruction is added
         self.duration = None
@@ -1247,29 +1242,21 @@ class QuantumCircuit:
     def _update_parameter_table(self, instruction: Instruction) -> Instruction:
 
         for param_index, param in enumerate(instruction.params):
-            print('\n\nin update param 0', self._parameters)
             if isinstance(param, ParameterExpression):
                 current_parameters = self._parameter_table
 
                 for parameter in param.parameters:
                     if parameter in current_parameters:
-                        print('\n\nin update param 1', self._parameter_table)
-                        print(instruction)
                         if not self._check_dup_param_spec(
                             self._parameter_table[parameter], instruction, param_index
                         ):
                             self._parameter_table[parameter].append((instruction, param_index))
-                        print('after 1', self._parameter_table)
                     else:
-                        print('\nin update param 2', self._parameter_table)
-                        print(instruction)
                         if parameter.name in self._parameter_table.get_names():
                             raise CircuitError(
                                 f"Name conflict on adding parameter: {parameter.name}"
                             )
-                        print('\n     be after 2', parameter, self._parameter_table)
                         self._parameter_table[parameter] = [(instruction, param_index)]
-                        print('after 2', parameter, self._parameter_table)
 
                         # clear cache if new parameter is added
                         self._parameters = None
@@ -1283,7 +1270,6 @@ class QuantumCircuit:
         param_index: int,
     ) -> bool:
         for spec in parameter_spec_list:
-            print("\nSPEC", spec)
             if spec[0] is instruction and spec[1] == param_index:
                 return True
         return False
@@ -2124,8 +2110,7 @@ class QuantumCircuit:
         cpy._node_idx_curr = itertools.count()
         cpy._data = self._copy_data()
         for node in cpy._data.topological_op_nodes():
-            #node_cpy = node.op.copy()
-            #cpy._update_parameter_table(node.op.copy())
+            cpy._update_parameter_table(node.op.copy())
             idx = next(cpy._node_idx_curr)
             cpy._node_idx_map[idx] = node
 
@@ -2354,11 +2339,9 @@ class QuantumCircuit:
 
     def _unsorted_parameters(self) -> Set[Parameter]:
         """Efficiently get all parameters in the circuit, without any sorting overhead."""
-        print('in unsorted', self._parameter_table)
         parameters = set(self._parameter_table)
         if isinstance(self.global_phase, ParameterExpression):
             parameters.update(self.global_phase.parameters)
-        print('parameters:',parameters)
         return parameters
 
     def assign_parameters(
@@ -2432,20 +2415,16 @@ class QuantumCircuit:
 
         """
         # replace in self or in a copy depending on the value of in_place
-        #if inplace:
-        bound_circuit = self
-        """else:
+        if inplace:
+            bound_circuit = self
+        else:
             bound_circuit = self.copy()
             self._increment_instances()
-            bound_circuit._name_update()"""
-        print('bound circuit\n', bound_circuit)
-        print("\n          in qc assign, parameters:", parameters)
+            bound_circuit._name_update()
         if isinstance(parameters, dict):
             # unroll the parameter dictionary (needed if e.g. it contains a ParameterVector)
             unrolled_param_dict = self._unroll_param_dict(parameters)
             unsorted_parameters = self._unsorted_parameters()
-            print('in assign, unrolled:', unrolled_param_dict)
-            print('unsorted:', unsorted_parameters)
 
             # check that all param_dict items are in the _parameter_table for this circuit
             params_not_in_circuit = [
@@ -2472,7 +2451,6 @@ class QuantumCircuit:
             # use a copy of the parameters, to ensure we don't change the contents of
             # self.parameters while iterating over them
             fixed_parameters_copy = self.parameters.copy()
-            print('fixed params:', fixed_parameters_copy)
             for i, value in enumerate(parameters):
                 bound_circuit._assign_parameter(fixed_parameters_copy[i], value)
         return None if inplace else bound_circuit
@@ -2536,19 +2514,14 @@ class QuantumCircuit:
                 replace instances of ``parameter``.
         """
         # parameter might be in global phase only
-        print('in _assign 0, parameter, param table:', parameter, self._parameter_table)
         if parameter in self._parameter_table.keys():
             for instr, param_index in self._parameter_table[parameter]:
-                print('in assign A, instr, param_index', instr, param_index)
                 new_param = instr.params[param_index].assign(parameter, value)
-                print('new param', new_param)
                 # if fully bound, validate
                 if len(new_param.parameters) == 0:
                     instr.params[param_index] = instr.validate_parameter(new_param)
-                    print('new_param = 0, instr.params[param_index]', instr.params[param_index])
                 else:
                     instr.params[param_index] = new_param
-                    print('new_param != 0, instr.params[param_index]', instr.params[param_index])
 
                 self._rebind_definition(instr, parameter, value)
 
@@ -2557,13 +2530,10 @@ class QuantumCircuit:
                 for new_parameter in value.parameters:
                     if new_parameter in self._parameter_table:
                         self._parameter_table[new_parameter].extend(entry)
-                        print('extend entry:', self._parameter_table[new_parameter])
                     else:
                         self._parameter_table[new_parameter] = entry
-                        print('= entry:', self._parameter_table[new_parameter])
             else:
                 del self._parameter_table[parameter]  # clear evaluated expressions
-                print('del entry:')
 
 
         if (
@@ -2571,7 +2541,6 @@ class QuantumCircuit:
             and parameter in self.global_phase.parameters
         ):
             self.global_phase = self.global_phase.assign(parameter, value)
-        print('in _assign 1', self._parameter_table)
 
         # clear parameter cache
         self._parameters = None

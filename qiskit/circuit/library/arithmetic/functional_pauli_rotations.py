@@ -32,7 +32,6 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
             basis: The kind of Pauli rotation to use. Must be 'X', 'Y' or 'Z'.
             name: The name of the circuit object.
         """
-        print('in fp init')
         super().__init__(name=name)
 
         # define internal parameters
@@ -42,8 +41,6 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         # store parameters
         self.num_state_qubits = num_state_qubits
         self.basis = basis
-        print('basis init', self.basis)
-        print('_basis init', self._basis)
 
     @property
     def basis(self) -> str:
@@ -70,7 +67,7 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         if self._basis is None or basis != self._basis:
             if basis not in ["x", "y", "z"]:
                 raise ValueError(f"The provided basis must be X, Y or Z, not {basis}")
-            #self._invalidate()
+            self._invalidate()
             self._basis = basis
 
     @property
@@ -92,12 +89,10 @@ class FunctionalPauliRotations(BlueprintCircuit, ABC):
         Args:
             num_state_qubits: The new number of qubits.
         """
-        print('in fp num_state', self._num_state_qubits, num_state_qubits)
         if self._num_state_qubits is None or num_state_qubits != self._num_state_qubits:
-            #self._invalidate()
+            self._invalidate()
             self._num_state_qubits = num_state_qubits
 
-            print('in fp num_state', self._data)
             self._reset_registers(num_state_qubits)
 
     @abstractmethod

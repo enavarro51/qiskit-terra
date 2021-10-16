@@ -36,16 +36,13 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         The ``_data`` argument storing the internal circuit data is set to ``None`` to indicate
         that the circuit has not been built yet.
         """
-        print('in bp init')
         super().__init__(*regs, name=name)
-        #self._data = DAGCircuit()
         self._qregs = []
         self._cregs = []
         self._qubits = []
         self._qubit_indices = dict()
         self._valid = False
-        self._data = DAGCircuit()
-        print('end bp init')
+        self._data = None
 
     @abstractmethod
     def _check_configuration(self, raise_on_failure: bool = True) -> bool:
@@ -65,37 +62,24 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     def _build(self) -> None:
         """Build the circuit."""
         # do not build the circuit if _data is already populated
-        if self._data:
+        if self._data is not None:
             return
 
-        print('in bp build')
         self._data = DAGCircuit()
         qubits = [qbit for qreg in self._qregs for qbit in qreg]
-        #clbits = [cbit for creg in self._cregs for cbit in creg]
         self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
-        #self._data.cregs = OrderedDict((creg.name, creg) for creg in self._cregs)
         self._data.add_qubits(qubits)
-        #self._data.add_clbits(clbits)
 
         # check whether the configuration is valid
-        #self._parameter_table = ParameterTable()
-        #self._global_phase = 0
+        self._parameter_table = ParameterTable()
+        self._global_phase = 0
         self._valid = self._check_configuration()
-        print('after bp build')
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
         self._valid = False
 
         self._data = None
-        """self._data = DAGCircuit()
-        qubits = [qbit for qreg in self._qregs for qbit in qreg]
-        #clbits = [cbit for creg in self._cregs for cbit in creg]
-        self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
-        #self._data.cregs = OrderedDict((creg.name, creg) for creg in self._cregs)
-        self._data.add_qubits(qubits)
-        #self._data.add_clbits(clbits)"""
-
         self._parameter_table = ParameterTable()
         self.global_phase = 0
 
@@ -107,22 +91,19 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @qregs.setter
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
-        print('in bp qregs', self._data)
         self._data = DAGCircuit()
-        print(qregs)
         self._qregs = []
         self._qubits = []
         self._ancillas = []
         self._qubit_indices = {}
 
         self.add_register(*qregs)
-        print('in bp after add reg', self._data, self._data.qregs, self._qregs)
 
         self._invalidate()
 
     @property
     def data(self):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().data
 
@@ -138,33 +119,33 @@ class BlueprintCircuit(QuantumCircuit, ABC):
 
     @property
     def num_parameters(self) -> int:
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().num_parameters
 
     @property
     def parameters(self) -> ParameterView:
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().parameters
 
     def qasm(self, formatted=False, filename=None, encoding=None):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().qasm(formatted, filename, encoding)
 
     def append(self, instruction, qargs=None, cargs=None):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().append(instruction, qargs, cargs)
 
     def compose(self, other, qubits=None, clbits=None, front=False, inplace=False, wrap=False):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().compose(other, qubits, clbits, front, inplace, wrap)
 
     def inverse(self):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().inverse()
 
@@ -175,41 +156,41 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         return self.data[item]
 
     def size(self, *args, **kwargs):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().size(*args, **kwargs)
 
     def to_instruction(self, parameter_map=None, label=None):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().to_instruction(parameter_map, label=label)
 
     def to_gate(self, parameter_map=None, label=None):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().to_gate(parameter_map, label=label)
 
     def depth(self, *args, **kwargs):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().depth(*args, **kwargs)
 
     def count_ops(self):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().count_ops()
 
     def num_nonlocal_gates(self):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().num_nonlocal_gates()
 
     def num_connected_components(self, unitary_only=False):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().num_connected_components(unitary_only=unitary_only)
 
     def copy(self, name=None):
-        if not self._data:
+        if self._data is None:
             self._build()
         return super().copy(name=name)
