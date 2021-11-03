@@ -239,7 +239,7 @@ class PiecewiseLinearPauliRotations(FunctionalPauliRotations):
                 self.add_register(qr_ancilla)
 
     def _build(self):
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

@@ -73,7 +73,13 @@ class TestBlueprintCircuit(QiskitTestCase):
 
         mock._invalidate()
         with self.subTest(msg="after invalidating"):
+<<<<<<< HEAD
             self.assertTrue(mock._valid is False)
+||||||| merged common ancestors
+            self.assertTrue(mock._data is None)
+=======
+            self.assertFalse(mock._valid)
+>>>>>>> blueprint_refactor_2
             self.assertEqual(len(mock._parameter_table), 0)
 
         mock._build()

@@ -159,7 +159,7 @@ class LinearPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         # check if we have to rebuild and if the configuration is valid
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

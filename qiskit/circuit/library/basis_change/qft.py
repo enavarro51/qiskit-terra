@@ -209,10 +209,6 @@ class QFT(BlueprintCircuit):
         """
         return self._inverse
 
-    def _invalidate(self) -> None:
-        """Invalidate the current build of the circuit."""
-        self._data = None
-
     def inverse(self) -> "QFT":
         """Invert this circuit.
 
@@ -226,7 +222,6 @@ class QFT(BlueprintCircuit):
             name = self.name + "_dg"
 
         inverted = self.copy(name=name)
-        super(QFT, inverted)._invalidate()
 
         # data consists of the QFT gate only
         iqft = next(self._data.topological_op_nodes()).op.inverse()
@@ -252,8 +247,7 @@ class QFT(BlueprintCircuit):
 
     def _build(self) -> None:
         """Construct the circuit representing the desired state vector."""
-
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

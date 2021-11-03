@@ -182,7 +182,7 @@ class IntegerComparator(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the comparator circuit."""
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

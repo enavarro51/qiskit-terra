@@ -20,7 +20,6 @@ import numpy
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.circuit.quantumregister import QuantumRegister
 from qiskit.circuit import Instruction, Parameter, ParameterVector, ParameterExpression
-from qiskit.circuit.parametertable import ParameterTable
 from qiskit.exceptions import QiskitError
 
 from ..blueprintcircuit import BlueprintCircuit
@@ -133,7 +132,6 @@ class NLocal(BlueprintCircuit):
         self._skip_final_rotation_layer = skip_final_rotation_layer
         self._skip_unentangled_qubits = skip_unentangled_qubits
         self._initial_state, self._initial_state_circuit = None, None
-        self._data = None
         self._bounds = None
 
         if int(reps) != reps:
@@ -707,7 +705,8 @@ class NLocal(BlueprintCircuit):
             parameter in the corresponding direction. If None is returned, problem is fully
             unbounded.
         """
-        self._build()
+        if not self._valid:
+            self._build()
         return self._bounds
 
     @parameter_bounds.setter
@@ -718,11 +717,6 @@ class NLocal(BlueprintCircuit):
             bounds: The new parameter bounds.
         """
         self._bounds = bounds
-
-    def _invalidate(self):
-        """Invalidate the current circuit build."""
-        self._data = None
-        self._parameter_table = ParameterTable()
 
     def add_layer(
         self,
@@ -766,7 +760,7 @@ class NLocal(BlueprintCircuit):
                 self.num_qubits = num_qubits
 
         # modify the circuit accordingly
-        if self._data is not None and front is False:
+        if front is False and self._valid:
             if self._insert_barriers and len(self._data) > 0:
                 self.barrier()
 
@@ -807,7 +801,7 @@ class NLocal(BlueprintCircuit):
             AttributeError: If the parameters are given as list and do not match the number
                 of parameters.
         """
-        if self._data is None:
+        if not self._valid:
             self._build()
 
         return super().assign_parameters(parameters, inplace=inplace)
@@ -900,7 +894,7 @@ class NLocal(BlueprintCircuit):
 
     def _build(self) -> None:
         """Build the circuit."""
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()
@@ -968,51 +962,6 @@ class NLocal(BlueprintCircuit):
     def _parameter_generator(self, rep: int, block: int, indices: List[int]) -> Optional[Parameter]:
         """If certain blocks should use certain parameters this method can be overriden."""
         return None
-
-    def __str__(self) -> str:
-        """Draw this NLocal in circuit format using the standard gates.
-
-        Returns:
-            A single string representing this NLocal.
-        """
-        from qiskit.compiler import transpile
-
-        basis_gates = [
-            "id",
-            "x",
-            "y",
-            "z",
-            "h",
-            "s",
-            "t",
-            "sdg",
-            "tdg",
-            "rx",
-            "ry",
-            "rz",
-            "rxx",
-            "ryy",
-            "cx",
-            "cy",
-            "cz",
-            "ch",
-            "crx",
-            "cry",
-            "crz",
-            "swap",
-            "cswap",
-            "ccx",
-            "cu1",
-            "cu3",
-            "u1",
-            "u2",
-            "u3",
-        ]
-        return (
-            transpile(self, basis_gates=basis_gates, optimization_level=0)
-            .draw(output="text")
-            .single_string()
-        )
 
 
 def get_parameters(block: Union[QuantumCircuit, Instruction]) -> List[Parameter]:

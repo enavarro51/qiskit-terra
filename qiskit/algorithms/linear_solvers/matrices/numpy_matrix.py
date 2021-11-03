@@ -186,7 +186,7 @@ class NumPyMatrix(LinearSystemMatrix):
     def _build(self) -> None:
         """Build the circuit"""
         # do not build the circuit if _data is already populated
-        if self._data is not None:
+        if self._valid:
             return
 
         super()._build()

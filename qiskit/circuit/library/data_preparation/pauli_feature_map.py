@@ -143,7 +143,6 @@ class PauliFeatureMap(NLocal):
             skip_final_rotation_layer=True,
             name=name,
         )
-
         self._data_map_func = data_map_func or self_product
         self._paulis = paulis or ["Z", "ZZ"]
         self._alpha = alpha

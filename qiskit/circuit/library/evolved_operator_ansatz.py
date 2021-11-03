@@ -152,10 +152,8 @@ class EvolvedOperatorAnsatz(NLocal):
             return np.zeros(self.reps * len(self.operators), dtype=float)
 
     def _build(self):
-        if self._data is not None:
+        if self._valid:
             return
-
-        super()._build()
 
         coeff = Parameter("c")
         circuits = []
@@ -169,8 +167,9 @@ class EvolvedOperatorAnsatz(NLocal):
                 if _is_pauli_identity(op):
                     continue
 
-                evolved_op = self.evolution.convert((coeff * op).exp_i()).reduce()
-                circuits.append(evolved_op.to_circuit())
+                if op is not None:
+                    evolved_op = self.evolution.convert((coeff * op).exp_i()).reduce()
+                    circuits.append(evolved_op.to_circuit())
 
         self.rotation_blocks = []
         self.entanglement_blocks = circuits
