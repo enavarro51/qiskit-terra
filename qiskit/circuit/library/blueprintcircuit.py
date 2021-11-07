@@ -33,8 +33,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     def __init__(self, *regs, name: Optional[str] = None) -> None:
         """Create a new blueprint circuit.
 
-        The ``_data`` argument storing the internal circuit data is set to ``None`` to indicate
-        that the circuit has not been built yet.
+        The ``_valid`` argument is set to ``False`` to indicate that the circuit has not been built yet.
         """
         super().__init__(*regs, name=name)
         self._qregs = []
@@ -60,7 +59,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @abstractmethod
     def _build(self) -> None:
         """Build the circuit."""
-        # do not build the circuit if _data is already populated
         if self._valid:
             return
 
@@ -94,6 +92,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         self._qubit_indices = {}
 
         self.add_register(*qregs)
+        self._invalidate()
 
     @property
     def data(self):
@@ -187,4 +186,7 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     def copy(self, name=None):
         if not self._valid:
             self._build()
-        return super().copy(name=name)
+        circuit_copy = super().copy(name=name)
+        if circuit_copy is not None:
+            circuit_copy._valid = self._valid
+        return circuit_copy
