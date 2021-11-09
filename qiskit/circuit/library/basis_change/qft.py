@@ -11,13 +11,10 @@
 # that they have been altered from the originals.
 
 """Quantum Fourier Transform Circuit."""
-from collections import OrderedDict
-
 from typing import Optional
 import numpy as np
 
 from qiskit.circuit import QuantumCircuit, QuantumRegister
-from qiskit.dagcircuit import DAGCircuit
 
 from ..blueprintcircuit import BlueprintCircuit
 

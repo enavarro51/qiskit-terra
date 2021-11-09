@@ -891,8 +891,8 @@ class QuantumCircuit:
         #if front:
         #   dest._parameter_table.clear()
 
-        #for node in dest._node_idx_map.values():
-        #    dest._update_parameter_table(node.op)
+        for node in dest._node_idx_map.values():
+            dest._update_parameter_table(node.op)
 
         for gate, cals in other.calibrations.items():
             dest._calibrations[gate].update(cals)
@@ -1245,9 +1245,11 @@ class QuantumCircuit:
 
     def _update_parameter_table(self, instruction: Instruction) -> Instruction:
 
+        print('\ninst params', instruction.params)
         for param_index, param in enumerate(instruction.params):
             if isinstance(param, ParameterExpression):
                 current_parameters = self._parameter_table
+                print('\nparam table', self._parameter_table)
 
                 for parameter in param.parameters:
                     if parameter in current_parameters:
@@ -1264,6 +1266,7 @@ class QuantumCircuit:
 
                         # clear cache if new parameter is added
                         self._parameters = None
+                print('\nparam table 2222', self._parameter_table)
 
         return instruction
 
@@ -2114,7 +2117,7 @@ class QuantumCircuit:
         cpy._node_idx_curr = itertools.count()
         cpy._data = self._copy_data()
         for node in cpy._data.topological_op_nodes():
-            cpy._update_parameter_table(node.op.copy())
+            cpy._update_parameter_table(node.op)
             idx = next(cpy._node_idx_curr)
             cpy._node_idx_map[idx] = node
 

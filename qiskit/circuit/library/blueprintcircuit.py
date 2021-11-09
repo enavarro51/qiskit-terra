@@ -62,17 +62,26 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         if self._valid:
             return
 
-        self._data = DAGCircuit()
+        """self._data = DAGCircuit()
+        self._data._global_phase = 0
+        self._data._metadata = None
         qubits = [qbit for qreg in self._qregs for qbit in qreg]
         self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
-        self._data.add_qubits(qubits)
+        self._data.add_qubits(qubits)"""
 
         self._check_configuration()
         self._valid = True
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
-        self._data = None
+        #self._data = None
+        self._data = DAGCircuit()
+        self._data._global_phase = 0
+        self._data._metadata = None
+        qubits = [qbit for qreg in self._qregs for qbit in qreg]
+        self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
+        self._data.add_qubits(qubits)
+
         self._parameter_table = ParameterTable()
         self.global_phase = 0
         self._valid = False
@@ -86,6 +95,8 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
         self._data = DAGCircuit()
+        self._data._global_phase = 0
+        self._data._metadata = None
         self._qregs = []
         self._qubits = []
         self._ancillas = []

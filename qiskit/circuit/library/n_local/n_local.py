@@ -801,8 +801,8 @@ class NLocal(BlueprintCircuit):
             AttributeError: If the parameters are given as list and do not match the number
                 of parameters.
         """
-        if parameters is None or len(parameters) == 0:
-            return self
+        #if parameters is None or len(parameters) == 0:
+        #    return self
 
         if not self._valid:
             self._build()
