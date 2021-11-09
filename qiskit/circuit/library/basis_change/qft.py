@@ -227,10 +227,7 @@ class QFT(BlueprintCircuit):
         iqft = self.data[0][0].inverse()
         iqft.name = name
 
-        inverted._data = DAGCircuit()
-        qubits = [qbit for qreg in self.qregs for qbit in qreg]
-        inverted._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self.qregs)
-        inverted._data.add_qubits(qubits)
+        inverted.data.clear()
         inverted._append(iqft, inverted.qubits, [])
 
         inverted._inverse = not self._inverse
