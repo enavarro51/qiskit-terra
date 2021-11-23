@@ -43,6 +43,7 @@ from qiskit.visualization.utils import (
     get_gate_ctrl_text,
     get_param_str,
     get_bit_label,
+    get_bit_locations,
     matplotlib_close_if_inline,
 )
 from qiskit.circuit.tools.pi_check import pi_check
@@ -103,17 +104,7 @@ class MatplotlibDrawer:
                 pip_install="pip install pylatexenc",
             )
 
-        # First load register and index info for the cregs and qregs,
-        # then add any bits which don't have registers associated with them.
-        self._bit_locations = {
-            bit: {"register": register, "index": index}
-            for register in cregs + qregs
-            for index, bit in enumerate(register)
-        }
-        for index, bit in list(enumerate(qubits)) + list(enumerate(clbits)):
-            if bit not in self._bit_locations:
-                self._bit_locations[bit] = {"register": None, "index": index}
-
+        self._bit_locations = get_bit_locations(qregs, cregs, qubits, clbits, reverse_bits)
         self._qubit = qubits
         self._clbit = clbits
         self._qubit_dict = {}

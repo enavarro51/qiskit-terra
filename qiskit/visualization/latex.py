@@ -23,7 +23,13 @@ from qiskit.circuit.library.standard_gates import SwapGate, XGate, ZGate, RZZGat
 from qiskit.circuit.measure import Measure
 from qiskit.visualization.qcstyle import load_style
 from qiskit.circuit.tools.pi_check import pi_check
-from .utils import get_gate_ctrl_text, get_param_str, get_bit_label, generate_latex_label
+from .utils import (
+    get_gate_ctrl_text,
+    get_param_str,
+    get_bit_label,
+    generate_latex_label,
+    get_bit_locations,
+)
 
 
 class QCircuitImage:
@@ -126,15 +132,7 @@ class QCircuitImage:
         self.ordered_bits = qubits + clbits
         self.cregs = {reg: reg.size for reg in cregs}
 
-        self.bit_locations = {
-            bit: {"register": register, "index": index}
-            for register in cregs + qregs
-            for index, bit in enumerate(register)
-        }
-        for index, bit in list(enumerate(qubits)) + list(enumerate(clbits)):
-            if bit not in self.bit_locations:
-                self.bit_locations[bit] = {"register": None, "index": index}
-
+        self._bit_locations = get_bit_locations(qregs, cregs, qubits, clbits, reverse_bits)
         self.cregbundle = cregbundle
         # If there is any custom instruction that uses clasiscal bits
         # then cregbundle is forced to be False.
@@ -143,7 +141,7 @@ class QCircuitImage:
                 if node.op.name not in {"measure"} and node.cargs:
                     self.cregbundle = False
 
-        self.cregs_bits = [self.bit_locations[bit]["register"] for bit in clbits]
+        self.cregs_bits = [self._bit_locations[bit]["register"] for bit in clbits]
         self.img_regs = {bit: ind for ind, bit in enumerate(self.ordered_bits)}
 
         num_reg_bits = sum(reg.size for reg in self.cregs)
@@ -219,8 +217,8 @@ class QCircuitImage:
 
         # quantum register
         for ii, reg in enumerate(self.qubit_list):
-            register = self.bit_locations[reg]["register"]
-            index = self.bit_locations[reg]["index"]
+            register = self._bit_locations[reg]["register"]
+            index = self._bit_locations[reg]["index"]
             qubit_label = get_bit_label("latex", register, index, qubit=True, layout=self.layout)
             qubit_label += " : "
             if self.initial_state:
@@ -232,8 +230,8 @@ class QCircuitImage:
         offset = 0
         if self.clbit_list:
             for ii in range(len(self.qubit_list), self.img_width):
-                register = self.bit_locations[self.ordered_bits[ii + offset]]["register"]
-                index = self.bit_locations[self.ordered_bits[ii + offset]]["index"]
+                register = self._bit_locations[self.ordered_bits[ii + offset]]["register"]
+                index = self._bit_locations[self.ordered_bits[ii + offset]]["index"]
                 clbit_label = get_bit_label(
                     "latex", register, index, qubit=False, cregbundle=self.cregbundle
                 )
@@ -329,8 +327,8 @@ class QCircuitImage:
 
         max_reg_name = 3
         for reg in self.ordered_bits:
-            if self.bit_locations[reg]["register"] is not None:
-                max_reg_name = max(max_reg_name, len(self.bit_locations[reg]["register"].name))
+            if self._bit_locations[reg]["register"] is not None:
+                max_reg_name = max(max_reg_name, len(self._bit_locations[reg]["register"].name))
         sum_column_widths += 5 + max_reg_name / 3
 
         # could be a fraction so ceil
@@ -588,7 +586,7 @@ class QCircuitImage:
 
         cond_is_bit = isinstance(op.condition[0], Clbit)
         if cond_is_bit:
-            cond_reg = self.bit_locations[op.condition[0]]["register"]
+            cond_reg = self._bit_locations[op.condition[0]]["register"]
             if_value = op.condition[1]
         else:
             cond_reg = op.condition[0]
@@ -610,7 +608,7 @@ class QCircuitImage:
             # Print the condition value at the bottom and put bullet on creg line
             if cond_is_bit:
                 ctrl_bit = (
-                    str(cond_reg.name) + "_" + str(self.bit_locations[op.condition[0]]["index"])
+                    str(cond_reg.name) + "_" + str(self._bit_locations[op.condition[0]]["index"])
                 )
                 label = "T" if if_value is True else "F"
                 self._latex[cwire][col] = "\\control \\cw^(%s){^{\\mathtt{%s=%s}}} \\cwx[-%s]" % (
@@ -628,7 +626,7 @@ class QCircuitImage:
         else:
             # Add the open and closed buttons to indicate the condition value
             if cond_is_bit:
-                extra_gap = list(cond_reg).index(op.condition[0])
+                extra_gap = 0  # list(cond_reg).index(op.condition[0])
                 gap += extra_gap
                 control = "\\control" if if_value is True else "\\controlo"
                 self._latex[cwire + extra_gap][col] = (
