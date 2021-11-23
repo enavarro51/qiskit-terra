@@ -605,6 +605,17 @@ class TestLatexSourceGenerator(QiskitVisualizationTestCase):
         self.assertEqualToReference(filename1)
         self.assertEqualToReference(filename2)
 
+    def test_conditions_with_bits_reverse(self):
+        """Test that gates with conditions and measures work with bits reversed"""
+        filename = self._get_resource_path("test_latex_cond_reverse.tex")
+        bits = [Qubit(), Qubit(), Clbit(), Clbit()]
+        cr = ClassicalRegister(2, "cr")
+        crx = ClassicalRegister(3, "cs")
+        circuit = QuantumCircuit(bits, cr, [Clbit()], crx)
+        circuit.x(0).c_if(crx[1], 0)
+        circuit_drawer(circuit, cregbundle=False, reverse_bits=True, filename=filename)
+        self.assertEqualToReference(filename)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
