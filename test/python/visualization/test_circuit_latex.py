@@ -24,7 +24,7 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit.test.mock import FakeTenerife
 from qiskit.circuit.library import XGate, MCXGate, RZZGate, SwapGate, DCXGate
 from qiskit.extensions import HamiltonianGate
-from qiskit.circuit import Parameter
+from qiskit.circuit import Parameter, Qubit, Clbit
 from qiskit.circuit.library import IQP
 from qiskit.quantum_info.random import random_unitary
 from .visualization import QiskitVisualizationTestCase
@@ -613,7 +613,7 @@ class TestLatexSourceGenerator(QiskitVisualizationTestCase):
         crx = ClassicalRegister(3, "cs")
         circuit = QuantumCircuit(bits, cr, [Clbit()], crx)
         circuit.x(0).c_if(crx[1], 0)
-        circuit_drawer(circuit, cregbundle=False, reverse_bits=True, filename=filename)
+        circuit_drawer(circuit, cregbundle=False, reverse_bits=True, filename=filename, output="latex_source")
         self.assertEqualToReference(filename)
 
 

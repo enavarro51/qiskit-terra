@@ -20,7 +20,7 @@ from math import pi
 import numpy
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
-from qiskit.circuit import Gate, Parameter
+from qiskit.circuit import Gate, Parameter, Qubit, Clbit
 from qiskit.quantum_info.operators import SuperOp
 from qiskit.quantum_info.random import random_unitary
 from qiskit.test import QiskitTestCase
@@ -3018,6 +3018,38 @@ class TestTextConditional(QiskitTestCase):
             str(_text_circuit_drawer(circuit, cregbundle=False, reverse_bits=True)), expected
         )
 
+    def test_text_condition_bits_reverse(self):
+        """Condition and measure on single bits cregbundle true and reverse_bits true"""
+
+        bits = [Qubit(), Qubit(), Clbit(), Clbit()]
+        cr = ClassicalRegister(2, "cr")
+        crx = ClassicalRegister(3, "cs")
+        circuit = QuantumCircuit(bits, cr, [Clbit()], crx)
+        circuit.x(0).c_if(crx[1], 0)
+
+        expected = "\n".join(
+            [
+                "         ┌───┐    ",
+                "   1: ───┤ X ├────",
+                "         └─╥─┘    ",
+                "   0: ─────╫──────",
+                "           ║      ",
+                "   4: ═════╬══════",
+                "           ║      ",
+                "   3: ═════╬══════",
+                "      ┌────╨─────┐",
+                "cs: 3/╡ cs_1=0x0 ╞",
+                "      └────╥─────┘",
+                "   1: ═════╬══════",
+                "           ║      ",
+                "cr: 2/═════╩══════",
+           ]
+        )
+        print("\n", str(_text_circuit_drawer(circuit, cregbundle=True, initial_state=False, reverse_bits=True)))
+        print(expected)
+        self.assertEqual(
+            str(_text_circuit_drawer(circuit, cregbundle=True, initial_state=False, reverse_bits=True)), expected
+        )
 
 class TestTextIdleWires(QiskitTestCase):
     """The idle_wires option"""
