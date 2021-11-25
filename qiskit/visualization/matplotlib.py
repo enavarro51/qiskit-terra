@@ -106,10 +106,10 @@ class MatplotlibDrawer:
             )
 
         self._bit_locations = get_bit_locations(qregs, cregs, qubits, clbits, reverse_bits)
-        self._qubit = qubits
-        self._clbit = clbits
-        self._qubit_dict = {}
-        self._clbit_dict = {}
+        self._qubits = qubits
+        self._clbits = clbits
+        self._qubits_dict = {}
+        self._clbits_dict = {}
         self._nodes = nodes
         self._scale = 1.0 if scale is None else scale
 

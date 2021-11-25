@@ -24,14 +24,7 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit.test.mock import FakeTenerife
 from qiskit.circuit.library import XGate, MCXGate, RZZGate, SwapGate, DCXGate
 from qiskit.extensions import HamiltonianGate
-<<<<<<< HEAD
 from qiskit.circuit import Parameter, Qubit, Clbit
-||||||| merged common ancestors
-from qiskit.circuit import Parameter
-=======
-from qiskit.circuit import Parameter
-from qiskit.circuit import Qubit, Clbit
->>>>>>> fix_single_clbit_display_7248
 from qiskit.circuit.library import IQP
 from qiskit.quantum_info.random import random_unitary
 from .visualization import QiskitVisualizationTestCase
@@ -610,7 +603,6 @@ class TestLatexSourceGenerator(QiskitVisualizationTestCase):
         self.assertEqualToReference(filename1)
         self.assertEqualToReference(filename2)
 
-<<<<<<< HEAD
     def test_conditions_with_bits_reverse(self):
         """Test that gates with conditions and measures work with bits reversed"""
         filename = self._get_resource_path("test_latex_cond_reverse.tex")
@@ -618,12 +610,10 @@ class TestLatexSourceGenerator(QiskitVisualizationTestCase):
         cr = ClassicalRegister(2, "cr")
         crx = ClassicalRegister(3, "cs")
         circuit = QuantumCircuit(bits, cr, [Clbit()], crx)
-        circuit.x(0).c_if(crx[1], 0)
+        circuit.x(0).c_if(bits[3], 0)
         circuit_drawer(circuit, cregbundle=False, reverse_bits=True, filename=filename, output="latex_source")
         self.assertEqualToReference(filename)
 
-||||||| merged common ancestors
-=======
     def test_measures_with_conditions_with_bits(self):
         """Condition and measure on single bits cregbundle true"""
         filename1 = self._get_resource_path("test_latex_meas_cond_bits_false.tex")
@@ -639,7 +629,6 @@ class TestLatexSourceGenerator(QiskitVisualizationTestCase):
         self.assertEqualToReference(filename1)
         self.assertEqualToReference(filename2)
 
->>>>>>> fix_single_clbit_display_7248
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

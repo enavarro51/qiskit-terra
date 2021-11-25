@@ -23,20 +23,13 @@ from qiskit.circuit.library.standard_gates import SwapGate, XGate, ZGate, RZZGat
 from qiskit.circuit.measure import Measure
 from qiskit.visualization.qcstyle import load_style
 from qiskit.circuit.tools.pi_check import pi_check
-<<<<<<< HEAD
-from .utils import (
-    get_gate_ctrl_text,
-    get_param_str,
-    get_bit_label,
-    generate_latex_label,
-    get_bit_locations,
-)
 from .utils import (
     get_gate_ctrl_text,
     get_param_str,
     get_bit_label,
     generate_latex_label,
     get_condition_label,
+    get_bit_locations,
 )
 
 
