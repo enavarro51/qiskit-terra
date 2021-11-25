@@ -807,14 +807,14 @@ class TestMatplotlibDrawer(QiskitTestCase):
         self.circuit_drawer(circuit, cregbundle=False, filename="measure_cond_false.png")
         self.circuit_drawer(circuit, cregbundle=True, filename="measure_cond_true.png")
 
-    def test_conditions_measures_with_bits_reverse(self):
-        """Test that gates with conditions and measures work with bits reversed"""
+    def test_conditions_with_bits_reverse(self):
+        """Test that gates with conditions work with bits reversed"""
         bits = [Qubit(), Qubit(), Clbit(), Clbit()]
         cr = ClassicalRegister(2, "cr")
-        crx = ClassicalRegister(3, "cs")
+        crx = ClassicalRegister(2, "cs")
         circuit = QuantumCircuit(bits, cr, [Clbit()], crx)
-        circuit.x(0).c_if(crx[1], 0)
-        self.circuit_drawer(circuit, cregbundle=False, reverse_bits=True, filename="measure_cond_bits_reverse.png")
+        circuit.x(0).c_if(bits[3], 0)
+        self.circuit_drawer(circuit, cregbundle=False, reverse_bits=True, filename="cond_bits_reverse.png")
 
     def test_conditions_measures_with_bits(self):
         """Test that gates with conditions and measures work with bits"""
