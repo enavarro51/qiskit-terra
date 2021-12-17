@@ -479,22 +479,18 @@ class QuantumCircuit:
                  └───┘
         """
         circ = QuantumCircuit(
+            [*reversed(self.qubits)],
+            [*reversed(self.clbits)],
             *reversed(self.qregs),
             *reversed(self.cregs),
             name=self.name,
             global_phase=self.global_phase,
         )
-        num_qubits = self.num_qubits
-        num_clbits = self.num_clbits
-        old_qubits = self.qubits
-        old_clbits = self.clbits
-        new_qubits = circ.qubits
-        new_clbits = circ.clbits
+        circ._qubit_indices = self._qubit_indices
+        circ._clbit_indices = self._clbit_indices
 
         for inst, qargs, cargs in self.data:
-            new_qargs = [new_qubits[num_qubits - old_qubits.index(q) - 1] for q in qargs]
-            new_cargs = [new_clbits[num_clbits - old_clbits.index(c) - 1] for c in cargs]
-            circ._append(inst, new_qargs, new_cargs)
+            circ._append(inst, qargs, cargs)
         return circ
 
     def inverse(self) -> "QuantumCircuit":
