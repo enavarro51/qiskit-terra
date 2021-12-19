@@ -594,30 +594,27 @@ class TextDrawing:
 
     def __init__(
         self,
+        circuit,
         qubits,
         clbits,
         nodes,
-        reverse_bits=False,
-        plotbarriers=True,
+        plot_barriers=True,
         line_length=None,
         vertical_compression="high",
         layout=None,
         initial_state=True,
         cregbundle=False,
-        global_phase=None,
         encoding=None,
-        circuit=None,
     ):
+        self._circuit = circuit
         self.qubits = qubits
         self.clbits = clbits
-        self._circuit = circuit
         self.nodes = nodes
-        self.reverse_bits = reverse_bits
         self.layout = layout
         self.initial_state = initial_state
         self.cregbundle = cregbundle
-        self.global_phase = global_phase
-        self.plotbarriers = plotbarriers
+        self.global_phase = circuit.global_phase if hasattr(circuit, "global_phase") else None
+        self.plot_barriers = plot_barriers
         self.line_length = line_length
         if vertical_compression not in ["high", "medium", "low"]:
             raise ValueError("Vertical compression can only be 'high', 'medium', or 'low'")
@@ -781,9 +778,7 @@ class TextDrawing:
                 register = bit
                 index = self._bits_regs_map[bit]
             else:
-                register, bit_index, reg_index = get_bit_reg_index(
-                    self._circuit, bit, self.reverse_bits
-                )
+                register, bit_index, reg_index = get_bit_reg_index(self._circuit, bit)
                 index = bit_index if register is None else reg_index
 
             bit_label = get_bit_label(
@@ -1015,9 +1010,7 @@ class TextDrawing:
         if isinstance(op, Measure):
             gate = MeasureFrom()
             layer.set_qubit(node.qargs[0], gate)
-            register, _, reg_index = get_bit_reg_index(
-                self._circuit, node.cargs[0], self.reverse_bits
-            )
+            register, _, reg_index = get_bit_reg_index(self._circuit, node.cargs[0])
             if self.cregbundle and register is not None:
                 layer.set_clbit(
                     node.cargs[0],
@@ -1028,7 +1021,7 @@ class TextDrawing:
 
         elif op._directive:
             # barrier
-            if not self.plotbarriers:
+            if not self.plot_barriers:
                 return layer, current_cons, connection_label
 
             for qubit in node.qargs:
@@ -1130,9 +1123,7 @@ class TextDrawing:
         layers = [InputWire.fillup_layer(wire_names)]
 
         for node_layer in self.nodes:
-            layer = Layer(
-                self.qubits, self.clbits, self.reverse_bits, self.cregbundle, self._circuit
-            )
+            layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit)
 
             for node in node_layer:
                 layer, current_connections, connection_label = self._node_to_gate(node, layer)
@@ -1147,7 +1138,7 @@ class TextDrawing:
 class Layer:
     """A layer is the "column" of the circuit."""
 
-    def __init__(self, qubits, clbits, reverse_bits=False, cregbundle=False, circuit=None):
+    def __init__(self, qubits, clbits, cregbundle=False, circuit=None):
         self.qubits = qubits
         self.clbits_raw = clbits  # list of clbits ignoring cregbundle change below
         self._circuit = circuit
@@ -1170,7 +1161,6 @@ class Layer:
         self.qubit_layer = [None] * len(qubits)
         self.connections = []
         self.clbit_layer = [None] * len(clbits)
-        self.reverse_bits = reverse_bits
         self.cregbundle = cregbundle
 
     @property
@@ -1339,7 +1329,9 @@ class Layer:
             top_connect (char): The char to connect the box on the top.
         """
         label, val_bits = get_condition_label_val(
-            condition, self._circuit, self.cregbundle, self.reverse_bits
+            condition,
+            self._circuit,
+            self.cregbundle,
         )
         if isinstance(condition[0], ClassicalRegister):
             cond_reg = condition[0]
@@ -1359,6 +1351,7 @@ class Layer:
                 self.set_clbit(condition[0][0], BoxOnClWire(label=label, top_connect=top_connect))
         else:
             clbits = []
+            idx_list = []
             if isinstance(condition[0], Clbit):
                 for i, bit in enumerate(self.clbits):
                     if bit == condition[0]:
@@ -1366,12 +1359,15 @@ class Layer:
             else:
                 for i, bit in enumerate(self.clbits):
                     if isinstance(bit, ClassicalRegister):
-                        reg = bit
+                        register = bit
+                        reg_index = i
                     else:
-                        clbit = self._circuit.find_bit(bit)
-                        reg = clbit.registers[0][0] if clbit.registers else None
-                    if reg == cond_reg:
+                        register, _, reg_index = get_bit_reg_index(self._circuit, bit)
+                    if register == cond_reg:
+                        idx_list.append(reg_index)
                         clbits.append(self.clbits[i])
+            if idx_list and idx_list[0] > idx_list[-1]:
+                val_bits = val_bits[::-1]
             self.set_cond_bullets(label, val_bits, clbits)
 
     def set_cond_bullets(self, label, val_bits, clbits):

@@ -69,21 +69,18 @@ class MatplotlibDrawer:
 
     def __init__(
         self,
+        circuit,
         qubits,
         clbits,
         nodes,
         scale=None,
         style=None,
-        reverse_bits=False,
         plot_barriers=True,
         layout=None,
         fold=25,
         ax=None,
         initial_state=False,
         cregbundle=True,
-        global_phase=None,
-        calibrations=None,
-        circuit=None,
     ):
 
         if not HAS_MATPLOTLIB:
@@ -104,17 +101,10 @@ class MatplotlibDrawer:
                 name="MatplotlibDrawer",
                 pip_install="pip install pylatexenc",
             )
-
+        self._circuit = circuit
+        self._nodes = nodes
         self._qubits = qubits
         self._clbits = clbits
-        self._qubits_dict = {}
-        self._clbits_dict = {}
-        self._q_anchors = {}
-        self._c_anchors = {}
-        self._bits_regs_map = {}
-
-        self._nodes = nodes
-        self._circuit = circuit
         self._scale = 1.0 if scale is None else scale
 
         self._style, def_font_ratio = load_style(style)
@@ -123,7 +113,6 @@ class MatplotlibDrawer:
         # subfont. Font change is auto scaled in the self._figure.set_size_inches call in draw()
         self._subfont_factor = self._style["sfs"] * def_font_ratio / self._style["fs"]
 
-        self._reverse_bits = reverse_bits
         self._plot_barriers = plot_barriers
         self._layout = layout
         self._fold = fold
@@ -145,8 +134,14 @@ class MatplotlibDrawer:
 
         self._initial_state = initial_state
         self._cregbundle = cregbundle
-        self._global_phase = global_phase
-        self._calibrations = calibrations
+        self._global_phase = circuit.global_phase if hasattr(circuit, "global_phase") else None
+        self._calibrations = circuit.calibrations
+
+        self._qubits_dict = {}
+        self._clbits_dict = {}
+        self._q_anchors = {}
+        self._c_anchors = {}
+        self._bits_regs_map = {}
 
         self._fs = self._style["fs"]
         self._sfs = self._style["sfs"]
@@ -468,9 +463,7 @@ class MatplotlibDrawer:
             # otherwise, get the register from find_bit and use bit_index if
             # it's a bit, or the index of the bit in the register if it's a reg
             else:
-                register, bit_index, reg_index = get_bit_reg_index(
-                    self._circuit, bit, self._reverse_bits
-                )
+                register, bit_index, reg_index = get_bit_reg_index(self._circuit, bit)
                 index = bit_index if register is None else reg_index
 
             bit_label = get_bit_label(
@@ -540,7 +533,7 @@ class MatplotlibDrawer:
 
                 c_indxs = []
                 for carg in node.cargs:
-                    register, _, _ = get_bit_reg_index(self._circuit, carg, self._reverse_bits)
+                    register, _, _ = get_bit_reg_index(self._circuit, carg)
                     if register is not None and self._cregbundle:
                         c_indxs.append(self._bits_regs_map[register])
                     else:
@@ -834,7 +827,7 @@ class MatplotlibDrawer:
     def _condition(self, node, cond_xy):
         """Add a conditional to a gate"""
         label, val_bits = get_condition_label_val(
-            node.op.condition, self._circuit, self._cregbundle, self._reverse_bits
+            node.op.condition, self._circuit, self._cregbundle
         )
         cond_bit_reg = node.op.condition[0]
         cond_bit_val = int(node.op.condition[1])
@@ -846,18 +839,18 @@ class MatplotlibDrawer:
         # other cases, only one bit is shown.
         if not self._cregbundle and isinstance(cond_bit_reg, ClassicalRegister):
             for idx in range(cond_bit_reg.size):
-                rev_idx = cond_bit_reg.size - idx - 1 if self._reverse_bits else idx
-                cond_pos.append(cond_xy[self._bits_regs_map[cond_bit_reg[rev_idx]] - first_clbit])
-
-        # If it's a register bit and cregbundle, need to use the register to find the location
-        elif self._cregbundle and isinstance(cond_bit_reg, Clbit):
-            register, _, _ = get_bit_reg_index(self._circuit, cond_bit_reg, self._reverse_bits)
-            if register is not None:
-                cond_pos.append(cond_xy[self._bits_regs_map[register] - first_clbit])
-            else:
-                cond_pos.append(cond_xy[self._bits_regs_map[cond_bit_reg] - first_clbit])
+                cond_pos.append(cond_xy[self._bits_regs_map[cond_bit_reg[idx]] - first_clbit])
         else:
-            cond_pos.append(cond_xy[self._bits_regs_map[cond_bit_reg] - first_clbit])
+            # If it's a register bit and cregbundle, need to use the register to find the location
+            if self._cregbundle and isinstance(cond_bit_reg, Clbit):
+                register, _, _ = get_bit_reg_index(self._circuit, cond_bit_reg)
+                if register is not None:
+                    bit = register
+                else:
+                    bit = cond_bit_reg
+            else:
+                bit = cond_bit_reg
+            cond_pos.append(cond_xy[self._bits_regs_map[bit] - first_clbit])
 
         xy_plot = []
         for idx, xy in enumerate(cond_pos):
@@ -903,7 +896,7 @@ class MatplotlibDrawer:
         """Draw the measure symbol and the line to the clbit"""
         qx, qy = self._data[node]["q_xy"][0]
         cx, cy = self._data[node]["c_xy"][0]
-        register, _, reg_index = get_bit_reg_index(self._circuit, node.cargs[0], self._reverse_bits)
+        register, _, reg_index = get_bit_reg_index(self._circuit, node.cargs[0])
 
         # draw gate box
         self._gate(node)

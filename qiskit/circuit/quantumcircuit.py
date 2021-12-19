@@ -485,6 +485,7 @@ class QuantumCircuit:
             *reversed(self.cregs),
             name=self.name,
             global_phase=self.global_phase,
+            metadata=self.metadata,
         )
         circ._qubit_indices = self._qubit_indices
         circ._clbit_indices = self._clbit_indices

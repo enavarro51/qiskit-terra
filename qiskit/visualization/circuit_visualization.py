@@ -242,8 +242,8 @@ def circuit_drawer(
         return _text_circuit_drawer(
             circuit,
             filename=filename,
-            reverse_bits=reverse_bits,
             plot_barriers=plot_barriers,
+            reverse_bits=reverse_bits,
             justify=justify,
             vertical_compression=vertical_compression,
             idle_wires=idle_wires,
@@ -283,8 +283,8 @@ def circuit_drawer(
     elif output == "mpl":
         image = _matplotlib_circuit_drawer(
             circuit,
-            scale=scale,
             filename=filename,
+            scale=scale,
             style=style,
             plot_barriers=plot_barriers,
             reverse_bits=reverse_bits,
@@ -314,8 +314,8 @@ def circuit_drawer(
 def _text_circuit_drawer(
     circuit,
     filename=None,
-    reverse_bits=False,
     plot_barriers=True,
+    reverse_bits=False,
     justify=None,
     vertical_compression="high",
     idle_wires=True,
@@ -330,8 +330,8 @@ def _text_circuit_drawer(
     Args:
         circuit (QuantumCircuit): Input circuit
         filename (str): Optional filename to write the result
-        reverse_bits (bool): Rearrange the bits in reverse order.
         plot_barriers (bool): Draws the barriers when they are there.
+        reverse_bits (bool): Rearrange the bits in reverse order.
         justify (str) : `left`, `right` or `none`. Defaults to `left`. Says how
             the circuit should be justified.
         vertical_compression (string): `high`, `medium`, or `low`. It merges the
@@ -360,28 +360,26 @@ def _text_circuit_drawer(
     circuit, qubits, clbits, nodes = utils._get_layered_instructions(
         circuit, reverse_bits=reverse_bits, justify=justify, idle_wires=idle_wires
     )
+    if reverse_bits:
+        circuit = circuit.reverse_bits()
 
     if with_layout:
         layout = circuit._layout
     else:
         layout = None
-    global_phase = circuit.global_phase if hasattr(circuit, "global_phase") else None
     text_drawing = _text.TextDrawing(
+        circuit,
         qubits,
         clbits,
         nodes,
-        reverse_bits=reverse_bits,
+        plot_barriers=plot_barriers,
+        line_length=fold,
         layout=layout,
+        vertical_compression=vertical_compression,
         initial_state=initial_state,
         cregbundle=cregbundle,
-        global_phase=global_phase,
         encoding=encoding,
-        circuit=circuit,
     )
-    text_drawing.plotbarriers = plot_barriers
-    text_drawing.line_length = fold
-    text_drawing.vertical_compression = vertical_compression
-
     if filename:
         text_drawing.dump(filename, encoding=encoding)
     return text_drawing
@@ -414,10 +412,10 @@ def _latex_circuit_drawer(
         scale (float): scaling factor
         style (dict or str): dictionary of style or file name of style file
         filename (str): file path to save image to
-        reverse_bits (bool): When set to True reverse the bit order inside
-            registers for the output visualization.
         plot_barriers (bool): Enable/disable drawing barriers in the output
             circuit. Defaults to True.
+        reverse_bits (bool): When set to True reverse the bit order inside
+            registers for the output visualization.
         justify (str) : `left`, `right` or `none`. Defaults to `left`. Says how
             the circuit should be justified.
         idle_wires (bool): Include idle wires. Default is True.
@@ -526,8 +524,8 @@ def _generate_latex_source(
     filename=None,
     scale=0.7,
     style=None,
-    reverse_bits=False,
     plot_barriers=True,
+    reverse_bits=False,
     justify=None,
     idle_wires=True,
     with_layout=True,
@@ -541,10 +539,10 @@ def _generate_latex_source(
         scale (float): scaling factor
         style (dict or str): dictionary of style or file name of style file
         filename (str): optional filename to write latex
-        reverse_bits (bool): When set to True reverse the bit order inside
-            registers for the output visualization.
         plot_barriers (bool): Enable/disable drawing barriers in the output
             circuit. Defaults to True.
+        reverse_bits (bool): When set to True reverse the bit order inside
+            registers for the output visualization.
         justify (str) : `left`, `right` or `none`. Defaults to `left`. Says how
             the circuit should be justified.
         idle_wires (bool): Include idle wires. Default is True.
@@ -561,25 +559,25 @@ def _generate_latex_source(
     circuit, qubits, clbits, nodes = utils._get_layered_instructions(
         circuit, reverse_bits=reverse_bits, justify=justify, idle_wires=idle_wires
     )
+    if reverse_bits:
+        circuit = circuit.reverse_bits()
+
     if with_layout:
         layout = circuit._layout
     else:
         layout = None
 
-    global_phase = circuit.global_phase if hasattr(circuit, "global_phase") else None
     qcimg = _latex.QCircuitImage(
+        circuit,
         qubits,
         clbits,
         nodes,
         scale,
         style=style,
-        reverse_bits=reverse_bits,
         plot_barriers=plot_barriers,
         layout=layout,
         initial_state=initial_state,
         cregbundle=cregbundle,
-        global_phase=global_phase,
-        circuit=circuit,
     )
     latex = qcimg.latex()
     if filename:
@@ -619,10 +617,10 @@ def _matplotlib_circuit_drawer(
         scale (float): scaling factor
         filename (str): file path to save image to
         style (dict or str): dictionary of style or file name of style file
-        reverse_bits (bool): When set to True, reverse the bit order inside
-            registers for the output visualization.
         plot_barriers (bool): Enable/disable drawing barriers in the output
             circuit. Defaults to True.
+        reverse_bits (bool): When set to True, reverse the bit order inside
+            registers for the output visualization.
         justify (str): `left`, `right` or `none`. Defaults to `left`. Says how
             the circuit should be justified.
         idle_wires (bool): Include idle wires. Default is True.
@@ -646,6 +644,9 @@ def _matplotlib_circuit_drawer(
     circuit, qubits, clbits, nodes = utils._get_layered_instructions(
         circuit, reverse_bits=reverse_bits, justify=justify, idle_wires=idle_wires
     )
+    if reverse_bits:
+        circuit = circuit.reverse_bits()
+
     if with_layout:
         layout = circuit._layout
     else:
@@ -654,22 +655,18 @@ def _matplotlib_circuit_drawer(
     if fold is None:
         fold = 25
 
-    global_phase = circuit.global_phase if hasattr(circuit, "global_phase") else None
     qcd = _matplotlib.MatplotlibDrawer(
+        circuit,
         qubits,
         clbits,
         nodes,
         scale=scale,
         style=style,
-        reverse_bits=reverse_bits,
         plot_barriers=plot_barriers,
         layout=layout,
         fold=fold,
         ax=ax,
         initial_state=initial_state,
         cregbundle=cregbundle,
-        global_phase=global_phase,
-        calibrations=circuit.calibrations,
-        circuit=circuit,
     )
     return qcd.draw(filename)

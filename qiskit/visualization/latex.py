@@ -45,50 +45,45 @@ class QCircuitImage:
 
     def __init__(
         self,
+        circuit,
         qubits,
         clbits,
         nodes,
         scale,
         style=None,
-        reverse_bits=False,
         plot_barriers=True,
         layout=None,
         initial_state=False,
         cregbundle=False,
-        global_phase=None,
-        circuit=None,
     ):
         """QCircuitImage initializer.
 
         Args:
-            qubits (list[Qubit]): list of qubits
-            clbits (list[Clbit]): list of clbits
+            circuit (QuantumCircuit): the circuit that's being displayed
+            qubits (list(Qubit)): the qubits in the circuit used for the drawing
+            clbits (list(Clbit)): the clbits in the circuit used for the drawing
             nodes (list[list[DAGNode]]): list of circuit instructions, grouped by layer
             scale (float): image scaling
             style (dict or str): dictionary of style or file name of style file
-            reverse_bits (bool): when True, reverse the bit ordering of the registers
             plot_barriers (bool): Enable/disable drawing barriers in the output
                circuit. Defaults to True.
             layout (Layout or None): If present, the layout information will be
                included.
             initial_state (bool): Optional. Adds |0> in the beginning of the line. Default: `False`.
             cregbundle (bool): Optional. If set True bundle classical registers. Default: `False`.
-            global_phase (float): Optional, the global phase for the circuit.
-            circuit (QuantumCircuit): the circuit that's being displayed
         Raises:
             ImportError: If pylatexenc is not installed
         """
+        self._circuit = circuit
         self._qubits = qubits
         self._clbits = clbits
         self._nodes = nodes
         self._scale = 1.0 if scale is None else scale
-        self._reverse_bits = reverse_bits
         self._plot_barriers = plot_barriers
         self._layout = layout
         self._initial_state = initial_state
         self._cregbundle = cregbundle
-        self._global_phase = global_phase
-        self._circuit = circuit
+        self._global_phase = circuit.global_phase if hasattr(circuit, "global_phase") else None
 
         self._img_depth = 0
         self._img_width = 0
@@ -109,7 +104,9 @@ class QCircuitImage:
                 if node.op.name not in {"measure"} and node.cargs:
                     self._cregbundle = False
 
-        self._bits_regs_map = get_bits_regs_map(circuit, qubits + clbits, self._cregbundle)
+        self._bits_regs_map = get_bits_regs_map(
+            circuit, self._qubits + self._clbits, self._cregbundle
+        )
         self._img_width = len(self._bits_regs_map)
 
         self._style, _ = load_style(style)
@@ -179,9 +176,7 @@ class QCircuitImage:
                 register = bit
                 index = self._bits_regs_map[bit]
             else:
-                register, bit_index, reg_index = get_bit_reg_index(
-                    self._circuit, bit, self._reverse_bits
-                )
+                register, bit_index, reg_index = get_bit_reg_index(self._circuit, bit)
                 index = bit_index if register is None else reg_index
 
             bit_label = get_bit_label(
@@ -544,9 +539,7 @@ class QCircuitImage:
         #         or if cregbundle, wire number of the condition register itself
         # gap - the number of wires from cwire to the bottom gate qubit
 
-        label, val_bits = get_condition_label_val(
-            op.condition, self._circuit, self._cregbundle, self._reverse_bits
-        )
+        label, val_bits = get_condition_label_val(op.condition, self._circuit, self._cregbundle)
         cond_is_bit = isinstance(op.condition[0], Clbit)
         cond_reg = op.condition[0]
         if cond_is_bit:
@@ -556,10 +549,20 @@ class QCircuitImage:
 
         if self._cregbundle:
             cwire = self._bits_regs_map[cond_reg]
+            gap = cwire - max(wire_list)
+        elif cond_is_bit:
+            cwire = self._bits_regs_map[op.condition[0]]
+            gap = cwire - max(wire_list)
         else:
-            cwire = self._bits_regs_map[op.condition[0] if cond_is_bit else cond_reg[0]]
+            cwire_list = []
+            for idx in range(cond_reg.size):
+                cwire_list.append(self._bits_regs_map[cond_reg[idx]])
+            # if the bits are reversed, reverse val_bits
+            if cwire_list[0] > cwire_list[-1]:
+                val_bits = val_bits[::-1]
+                cwire_list = cwire_list[::-1]
+            gap = cwire_list[0] - max(wire_list)
 
-        gap = cwire - max(wire_list)
         meas_offset = -0.3 if isinstance(op, Measure) else 0.0
 
         # Print the condition value at the bottom and put bullet on creg line
@@ -571,19 +574,14 @@ class QCircuitImage:
                 str(gap),
             )
         else:
-            cond_len = op.condition[0].size - 1
-            # If reverse, start at highest reg bit and go down to 0
-            if self._reverse_bits:
-                cwire -= cond_len
-                gap -= cond_len
-            # Iterate through the reg bits down to the lowest one
-            for i in range(cond_len):
+            # Iterate through the reg bits
+            for i, wire in enumerate(cwire_list):
                 control = "\\control" if val_bits[i] == "1" else "\\controlo"
-                self._latex[cwire + i][col] = f"{control} \\cw \\cwx[-" + str(gap) + "]"
+                self._latex[wire][col] = f"{control} \\cw \\cwx[-" + str(gap) + "]"
                 gap = 1
             # Add (hex condition value) below the last cwire
-            control = "\\control" if val_bits[cond_len] == "1" else "\\controlo"
-            self._latex[cwire + cond_len][col] = (
+            control = "\\control" if val_bits[-1] == "1" else "\\controlo"
+            self._latex[cwire_list[-1]][col] = (
                 f"{control}" + " \\cw^(%s){^{\\mathtt{%s}}} \\cwx[-%s]"
             ) % (
                 meas_offset,

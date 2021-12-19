@@ -45,7 +45,7 @@ class TestVisualizationUtils(QiskitTestCase):
 
     def test_get_layered_instructions(self):
         """_get_layered_instructions without reverse_bits"""
-        (_, qregs, cregs, layered_ops) = utils._get_layered_instructions(self.circuit)
+        (_, qubits, clbits, layered_ops) = utils._get_layered_instructions(self.circuit)
 
         exp = [
             [("cx", [self.qr2[0], self.qr2[1]], []), ("cx", [self.qr1[0], self.qr1[1]], [])],
@@ -56,15 +56,15 @@ class TestVisualizationUtils(QiskitTestCase):
             [("measure", [self.qr1[1]], [self.cr1[1]])],
         ]
 
-        self.assertEqual([self.qr1[0], self.qr1[1], self.qr2[0], self.qr2[1]], qregs)
-        self.assertEqual([self.cr1[0], self.cr1[1], self.cr2[0], self.cr2[1]], cregs)
+        self.assertEqual([self.qr1[0], self.qr1[1], self.qr2[0], self.qr2[1]], qubits)
+        self.assertEqual([self.cr1[0], self.cr1[1], self.cr2[0], self.cr2[1]], clbits)
         self.assertEqual(
             exp, [[(op.name, op.qargs, op.cargs) for op in ops] for ops in layered_ops]
         )
 
     def test_get_layered_instructions_reverse_bits(self):
         """_get_layered_instructions with reverse_bits=True"""
-        (_, qregs, cregs, layered_ops) = utils._get_layered_instructions(
+        (_, qubits, clbits, layered_ops) = utils._get_layered_instructions(
             self.circuit, reverse_bits=True
         )
 
@@ -77,8 +77,8 @@ class TestVisualizationUtils(QiskitTestCase):
             [("measure", [self.qr1[1]], [self.cr1[1]])],
         ]
 
-        self.assertEqual([self.qr2[1], self.qr2[0], self.qr1[1], self.qr1[0]], qregs)
-        self.assertEqual([self.cr2[1], self.cr2[0], self.cr1[1], self.cr1[0]], cregs)
+        self.assertEqual([self.qr2[1], self.qr2[0], self.qr1[1], self.qr1[0]], qubits)
+        self.assertEqual([self.cr2[1], self.cr2[0], self.cr1[1], self.cr1[0]], clbits)
         self.assertEqual(
             exp, [[(op.name, op.qargs, op.cargs) for op in ops] for ops in layered_ops]
         )
@@ -100,7 +100,7 @@ class TestVisualizationUtils(QiskitTestCase):
         circuit.cx(qr1[1], qr1[0])
         circuit.measure(qr1[1], cr1[1])
 
-        (circuit, qregs, cregs, layered_ops) = utils._get_layered_instructions(
+        (_, qubits, clbits, layered_ops) = utils._get_layered_instructions(
             circuit, idle_wires=False
         )
 
@@ -113,8 +113,8 @@ class TestVisualizationUtils(QiskitTestCase):
             [("measure", [qr1[1]], [cr1[1]])],
         ]
 
-        self.assertEqual([qr1[0], qr1[1], qr2[0], qr2[1]], qregs)
-        self.assertEqual([cr1[0], cr1[1], cr2[0], cr2[1]], cregs)
+        self.assertEqual([qr1[0], qr1[1], qr2[0], qr2[1]], qubits)
+        self.assertEqual([cr1[0], cr1[1], cr2[0], cr2[1]], clbits)
         self.assertEqual(
             exp, [[(op.name, op.qargs, op.cargs) for op in ops] for ops in layered_ops]
         )

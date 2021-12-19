@@ -14,7 +14,6 @@
 
 import re
 from collections import OrderedDict
-import copy
 
 import numpy as np
 
@@ -31,7 +30,7 @@ from qiskit.circuit import (
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.circuit import ClassicalRegister
 from qiskit.circuit.tools import pi_check
-from qiskit.converters import circuit_to_dag, dag_to_circuit
+from qiskit.converters import circuit_to_dag
 from qiskit.exceptions import MissingOptionalLibraryError
 from qiskit.quantum_info.operators.symplectic import PauliList, SparsePauliOp
 from qiskit.quantum_info.states import DensityMatrix
@@ -193,14 +192,13 @@ def get_bits_regs_map(circuit, bits, cregbundle):
     return bits_regs_map
 
 
-def get_bit_reg_index(circuit, bit, reverse_bits):
+def get_bit_reg_index(circuit, bit):
     """Get the register for a bit if there is one, and the index of the bit
     from the top of the circuit, or the index of the bit within a register.
 
     Args:
         circuit (QuantumCircuit): the circuit being drawn
         bit (Qubit, Clbit): the bit to use to find the register and indexes
-        reverse_bits (bool): if True reverse order of the bits. Default: ``False``.
 
     Returns:
         (ClassicalRegister, None): register associated with the bit
@@ -213,9 +211,6 @@ def get_bit_reg_index(circuit, bit, reverse_bits):
     reg_index = None
     if register is not None:
         reg_index = register.index(bit)
-        if reverse_bits:
-            bits_len = len(circuit.clbits) if isinstance(bit, Clbit) else len(circuit.qubits)
-            bit_index = bits_len - bit_index - 1
 
     return register, bit_index, reg_index
 
@@ -282,14 +277,13 @@ def get_bit_label(drawer, register, index, layout=None, cregbundle=True):
     return bit_label
 
 
-def get_condition_label_val(condition, circuit, cregbundle, reverse_bits):
+def get_condition_label_val(condition, circuit, cregbundle):
     """Get the label and value list to display a condition
 
     Args:
         condition (Union[Clbit, ClassicalRegister], int): classical condition
         circuit (QuantumCircuit): the circuit that is being drawn
         cregbundle (bool): if set True bundle classical registers
-        reverse_bits (bool): if set True reverse the bit order
 
     Returns:
         str: label to display for the condition
@@ -301,15 +295,13 @@ def get_condition_label_val(condition, circuit, cregbundle, reverse_bits):
     # if condition on a register, return list of 1's and 0's indicating
     # closed or open, else only one element is returned
     if isinstance(condition[0], ClassicalRegister) and not cregbundle:
-        val_bits = list(str(bin(cond_val))[2:].zfill(condition[0].size))
-        if not reverse_bits:
-            val_bits = val_bits[::-1]
+        val_bits = list(str(bin(cond_val))[2:].zfill(condition[0].size))[::-1]
     else:
         val_bits = list(str(cond_val))
 
     label = ""
     if cond_is_bit and cregbundle:
-        register, _, reg_index = get_bit_reg_index(circuit, condition[0], False)
+        register, _, reg_index = get_bit_reg_index(circuit, condition[0])
         if register is not None:
             label = f"{register.name}_{reg_index}={hex(cond_val)}"
     elif not cond_is_bit:
@@ -367,16 +359,15 @@ def _get_layered_instructions(circuit, reverse_bits=False, justify=None, idle_wi
     """
     Given a circuit, return a tuple (qubits, clbits, nodes) where
     qubits and clbits are the quantum and classical registers
-    in order (based on reverse_bits) and nodes is a list
-    of DAG nodes whose type is "operation".
+    in order and nodes is a list of DAG nodes whose type is "operation".
 
     Args:
         circuit (QuantumCircuit): From where the information is extracted.
-        reverse_bits (bool): If true the order of the bits in the registers is
-            reversed.
+        reverse_bits (bool): If true, reverse order of bits
         justify (str) : `left`, `right` or `none`. Defaults to `left`. Says how
             the circuit should be justified.
         idle_wires (bool): Include idle wires. Default is True.
+        reverse_bits (bool): Reverse the order of the bits. Default is False.
     Returns:
         Tuple(list,list,list): To be consumed by the visualizer directly.
     """
@@ -415,10 +406,6 @@ def _get_layered_instructions(circuit, reverse_bits=False, justify=None, idle_wi
                 qubits.remove(wire)
             if wire in clbits:
                 clbits.remove(wire)
-        dag_copy = copy.deepcopy(dag)
-        for wire in dag.idle_wires(ignore=["barrier", "delay"]):
-            dag_copy._remove_idle_wire(wire)
-        circuit = dag_to_circuit(dag_copy)
 
     nodes = [[node for node in layer if any(q in qubits for q in node.qargs)] for layer in nodes]
 
