@@ -10,10 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# pylint: disable=no-name-in-module,import-error
-
 """ Test VQE """
 
+import logging
 import unittest
 from test.python.algorithms import QiskitAlgorithmsTestCase
 
@@ -47,10 +46,27 @@ from qiskit.opflow import (
     X,
     Z,
 )
+from qiskit.quantum_info import Statevector
+from qiskit.transpiler import PassManager, PassManagerConfig
+from qiskit.transpiler.preset_passmanagers import level_1_pass_manager
 from qiskit.utils import QuantumInstance, algorithm_globals, has_aer
+from ..transpiler._dummy_passes import DummyAP
 
 if has_aer():
     from qiskit import Aer
+
+logger = "LocalLogger"
+
+
+class LogPass(DummyAP):
+    """A dummy analysis pass that logs when executed"""
+
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+
+    def run(self, dag):
+        logging.getLogger(logger).info(self.message)
 
 
 @ddt
@@ -155,7 +171,7 @@ class TestVQE(QiskitAlgorithmsTestCase):
 
     @data(
         (SLSQP(maxiter=50), 5, 4),
-        (SPSA(maxiter=150), 3, 2),  # max_evals_grouped=n or =2 if n>2
+        (SPSA(maxiter=150), 2, 2),  # max_evals_grouped=n or =2 if n>2
     )
     @unpack
     def test_max_evals_grouped(self, optimizer, places, max_evals_grouped):
@@ -185,32 +201,14 @@ class TestVQE(QiskitAlgorithmsTestCase):
         result = vqe.compute_minimum_eigenvalue(operator=self.h2_op)
         self.assertAlmostEqual(result.eigenvalue.real, -1.86823, places=2)
 
-    def test_qasm_aux_operators_normalized(self):
-        """Test VQE with qasm_simulator returns normalized aux_operator eigenvalues."""
+    def test_qasm_eigenvector_normalized(self):
+        """Test VQE with qasm_simulator returns normalized eigenvector."""
         wavefunction = self.ry_wavefunction
         vqe = VQE(ansatz=wavefunction, quantum_instance=self.qasm_simulator)
-        _ = vqe.compute_minimum_eigenvalue(operator=self.h2_op)
+        result = vqe.compute_minimum_eigenvalue(operator=self.h2_op)
 
-        opt_params = [
-            3.50437328,
-            3.87415376,
-            0.93684363,
-            5.92219622,
-            -1.53527887,
-            1.87941418,
-            -4.5708326,
-            0.70187027,
-        ]
-
-        vqe._ret.optimal_point = opt_params
-        vqe._ret.optimal_parameters = dict(
-            zip(sorted(wavefunction.parameters, key=lambda p: p.name), opt_params)
-        )
-
-        with self.assertWarns(DeprecationWarning):
-            optimal_vector = vqe.get_optimal_vector()
-
-        self.assertAlmostEqual(sum(v ** 2 for v in optimal_vector.values()), 1.0, places=4)
+        amplitudes = list(result.eigenstate.values())
+        self.assertAlmostEqual(np.linalg.norm(amplitudes), 1.0, places=4)
 
     @unittest.skipUnless(has_aer(), "qiskit-aer doesn't appear to be installed.")
     def test_with_aer_statevector(self):
@@ -653,6 +651,66 @@ class TestVQE(QiskitAlgorithmsTestCase):
         self.assertAlmostEqual(result.aux_operator_eigenvalues[1][1], 0.0, places=6)
         self.assertAlmostEqual(result.aux_operator_eigenvalues[2][1], 0.0)
         self.assertAlmostEqual(result.aux_operator_eigenvalues[3][1], 0.0)
+
+    def test_2step_transpile(self):
+        """Test the two-step transpiler pass."""
+        # count how often the pass for parameterized circuits is called
+        pre_counter = LogPass("pre_passmanager")
+        pre_pass = PassManager(pre_counter)
+        config = PassManagerConfig(basis_gates=["u3", "cx"])
+        pre_pass += level_1_pass_manager(config)
+
+        # ... and the pass for bound circuits
+        bound_counter = LogPass("bound_pass_manager")
+        bound_pass = PassManager(bound_counter)
+
+        quantum_instance = QuantumInstance(
+            backend=BasicAer.get_backend("statevector_simulator"),
+            basis_gates=["u3", "cx"],
+            pass_manager=pre_pass,
+            bound_pass_manager=bound_pass,
+        )
+
+        optimizer = SPSA(maxiter=5, learning_rate=0.01, perturbation=0.01)
+
+        vqe = VQE(optimizer=optimizer, quantum_instance=quantum_instance)
+        _ = vqe.compute_minimum_eigenvalue(Z)
+
+        with self.assertLogs(logger, level="INFO") as cm:
+            _ = vqe.compute_minimum_eigenvalue(Z)
+
+        expected = [
+            "pre_passmanager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "bound_pass_manager",
+            "pre_passmanager",
+            "bound_pass_manager",
+        ]
+        self.assertEqual([record.message for record in cm.records], expected)
+
+    def test_construct_eigenstate_from_optpoint(self):
+        """Test constructing the eigenstate from the optimal point, if the default ansatz is used."""
+
+        # use Hamiltonian yielding more than 11 parameters in the default ansatz
+        hamiltonian = Z ^ Z ^ Z
+        optimizer = SPSA(maxiter=1, learning_rate=0.01, perturbation=0.01)
+        quantum_instance = QuantumInstance(
+            backend=BasicAer.get_backend("statevector_simulator"), basis_gates=["u3", "cx"]
+        )
+        vqe = VQE(optimizer=optimizer, quantum_instance=quantum_instance)
+        result = vqe.compute_minimum_eigenvalue(hamiltonian)
+
+        optimal_circuit = vqe.ansatz.bind_parameters(result.optimal_point)
+        self.assertTrue(Statevector(result.eigenstate).equiv(optimal_circuit))
 
 
 if __name__ == "__main__":

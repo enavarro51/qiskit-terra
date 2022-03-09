@@ -10,7 +10,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# pylint: disable=no-member
 
 """Polynomially controlled Pauli-rotations."""
 
@@ -313,7 +312,7 @@ class PolynomialPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         """If not already built, build the circuit."""
-        if self._valid:
+        if self._is_built:
             return
 
         super()._build()

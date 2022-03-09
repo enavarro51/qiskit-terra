@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2018, 2021.
+# (C) Copyright IBM 2018, 2022.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -47,6 +47,7 @@ Amplitude Amplifiers
    :nosignatures:
 
    AmplificationProblem
+   AmplitudeAmplifier
    Grover
    GroverResult
 
@@ -75,7 +76,7 @@ Eigensolvers
 ------------
 
 Algorithms to find eigenvalues of an operator. For chemistry these can be used to find excited
-states of a molecule and qiskit.chemistry has some algorithms that leverage chemistry specific
+states of a molecule, and qiskit-nature has some algorithms that leverage chemistry specific
 knowledge to do this in that application domain.
 
 .. autosummary::
@@ -114,10 +115,7 @@ Algorithms to solve linear systems of equations.
    :toctree: ../stubs/
    :nosignatures:
 
-   HHL
-   NumPyLinearSolver
-   LinearSolver
-   LinearSolverResult
+   linear_solvers
 
 
 Minimum Eigensolvers
@@ -179,7 +177,7 @@ Exceptions
 
 from .algorithm_result import AlgorithmResult
 from .variational_algorithm import VariationalAlgorithm, VariationalResult
-from .amplitude_amplifiers import Grover, GroverResult, AmplificationProblem
+from .amplitude_amplifiers import Grover, GroverResult, AmplificationProblem, AmplitudeAmplifier
 from .amplitude_estimators import (
     AmplitudeEstimator,
     AmplitudeEstimatorResult,
@@ -218,6 +216,7 @@ __all__ = [
     "AlgorithmResult",
     "VariationalAlgorithm",
     "VariationalResult",
+    "AmplitudeAmplifier",
     "AmplificationProblem",
     "Grover",
     "GroverResult",

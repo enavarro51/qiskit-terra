@@ -40,6 +40,8 @@ class QuantumCircuitData(MutableSequence):
 
         if not isinstance(instruction, Instruction) and hasattr(instruction, "to_instruction"):
             instruction = instruction.to_instruction()
+        if not isinstance(instruction, Instruction):
+            raise CircuitError("object is not an Instruction.")
 
         expanded_qargs = [self._circuit.qbit_argument_conversion(qarg) for qarg in qargs or []]
         expanded_cargs = [self._circuit.cbit_argument_conversion(carg) for carg in cargs or []]
@@ -53,13 +55,7 @@ class QuantumCircuitData(MutableSequence):
 
         qargs, cargs = broadcast_args[0]
 
-        if not isinstance(instruction, Instruction):
-            raise CircuitError("object is not an Instruction.")
-
         self._circuit._check_dups(qargs)
-        self._circuit._check_qargs(qargs)
-        self._circuit._check_cargs(cargs)
-
         self._circuit._node_idx_map[key].op = instruction
         self._circuit._node_idx_map[key].qargs = qargs
         self._circuit._node_idx_map[key].cargs = cargs

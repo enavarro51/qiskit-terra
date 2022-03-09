@@ -705,7 +705,7 @@ class NLocal(BlueprintCircuit):
             parameter in the corresponding direction. If None is returned, problem is fully
             unbounded.
         """
-        if not self._valid:
+        if not self._is_built:
             self._build()
         return self._bounds
 
@@ -760,7 +760,7 @@ class NLocal(BlueprintCircuit):
                 self.num_qubits = num_qubits
 
         # modify the circuit accordingly
-        if front is False and self._valid:
+        if front is False and self._is_built:
             if self._insert_barriers and len(self.data) > 0:
                 self.barrier()
 
@@ -801,10 +801,10 @@ class NLocal(BlueprintCircuit):
             AttributeError: If the parameters are given as list and do not match the number
                 of parameters.
         """
-        #if parameters is None or len(parameters) == 0:
-        #    return self
+        if parameters is None or len(parameters) == 0:
+            return self
 
-        if not self._valid:
+        if not self._is_built:
             self._build()
 
         return super().assign_parameters(parameters, inplace=inplace)
@@ -897,7 +897,7 @@ class NLocal(BlueprintCircuit):
 
     def _build(self) -> None:
         """If not already built, build the circuit."""
-        if self._valid:
+        if self._is_built:
             return
 
         super()._build()
@@ -948,9 +948,8 @@ class NLocal(BlueprintCircuit):
         # cast global phase to float if it has no free parameters
         if isinstance(circuit.global_phase, ParameterExpression):
             try:
-                circuit.global_phase = float(circuit.global_phase._symbol_expr)
-            # RuntimeError is raised if symengine is used, for SymPy it is a TypeError
-            except (RuntimeError, TypeError):
+                circuit.global_phase = float(circuit.global_phase)
+            except TypeError:
                 # expression contains free parameters
                 pass
 

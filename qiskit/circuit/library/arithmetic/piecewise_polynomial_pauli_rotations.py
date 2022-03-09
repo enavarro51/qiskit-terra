@@ -131,9 +131,9 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
         if (
             self.num_state_qubits is not None
             and len(self._breakpoints) == len(self.coeffs)
-            and self._breakpoints[-1] < 2 ** self.num_state_qubits
+            and self._breakpoints[-1] < 2**self.num_state_qubits
         ):
-            return self._breakpoints + [2 ** self.num_state_qubits]
+            return self._breakpoints + [2**self.num_state_qubits]
 
         return self._breakpoints
 
@@ -265,7 +265,7 @@ class PiecewisePolynomialPauliRotations(FunctionalPauliRotations):
 
     def _build(self):
         """If not already built, build the circuit."""
-        if self._valid:
+        if self._is_built:
             return
 
         super()._build()
