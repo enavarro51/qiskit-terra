@@ -59,12 +59,12 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         if self._is_built:
             return
 
-        """self._data = DAGCircuit()
+        self._data = DAGCircuit()
         self._data._global_phase = 0
         self._data._metadata = None
         qubits = [qbit for qreg in self._qregs for qbit in qreg]
         self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
-        self._data.add_qubits(qubits)"""
+        self._data.add_qubits(qubits)
 
        # check whether the configuration is valid
         self._check_configuration()

@@ -1294,9 +1294,9 @@ class QuantumCircuit:
 
     def _update_parameter_table(self, instruction: Instruction) -> Instruction:
 
-        print('\ninst params', instruction.params)
+        #print('\ninst params', instruction.params)
         for param_index, param in enumerate(instruction.params):
-"""<<<<<<< HEAD
+            """<<<<<<< HEAD
             if isinstance(param, ParameterExpression):
                 current_parameters = self._parameter_table
                 print('\nparam table', self._parameter_table)
