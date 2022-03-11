@@ -328,11 +328,11 @@ class QuantumCircuit:
         for inst, qargs, cargs in data_input:
             key = next(self._node_idx_curr)
             self._node_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
-            self._node_idx_map[key].op = inst
+            """self._node_idx_map[key].op = inst
             self._node_idx_map[key].qargs = qargs
             self._node_idx_map[key].cargs = cargs
 
-            self._update_parameter_table(inst)
+            self._update_parameter_table(inst)"""
 
     @property
     def calibrations(self) -> dict:
@@ -908,7 +908,7 @@ class QuantumCircuit:
 
                 n_instr.condition = DAGCircuit._map_condition(edge_map, instr.condition, self.cregs)
 
-            #dest._data.apply_operation_back(n_instr, n_qargs, n_cargs)
+            dest._data.apply_operation_back(n_instr, n_qargs, n_cargs)
 
         """if front:
             # adjust new instrs before original ones and update all parameters
