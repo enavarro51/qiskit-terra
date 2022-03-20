@@ -50,7 +50,7 @@ class PauliGate(Gate):
 
         paulis = self.params[0]
         rules = [(gates[p](), [q[i]], []) for (i, p) in enumerate(reversed(paulis)) if p != "I"]
-        qc._data = rules
+        qc.data = rules
         self.definition = qc
 
     def inverse(self):

@@ -302,7 +302,7 @@ class QuantumCircuit:
             Instruction (or subclass) object, qargs is a list of Qubit objects, and cargs is a
             list of Clbit objects.
         """
-        return([(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values()])
+        return [(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values()]
         #return QuantumCircuitData(self)
 
     @data.setter
@@ -323,16 +323,12 @@ class QuantumCircuit:
         data_input = data_input.copy()
         for node in self._node_idx_map.values():
             self._data.remove_op_node(node)
+        self._node_idx_map = {}
+        self._node_idx_curr = itertools.count()
         self._parameter_table = ParameterTable()
 
         for inst, qargs, cargs in data_input:
-            key = next(self._node_idx_curr)
-            self._node_idx_map[key] = self._data.apply_operation_back(inst, qargs, cargs)
-            """self._node_idx_map[key].op = inst
-            self._node_idx_map[key].qargs = qargs
-            self._node_idx_map[key].cargs = cargs
-
-            self._update_parameter_table(inst)"""
+            self.append(inst, qargs, cargs)
 
     @property
     def calibrations(self) -> dict:
@@ -859,7 +855,7 @@ class QuantumCircuit:
                 return None
             return dest
 
-        instrs = other.data
+        instrs = copy.deepcopy(other.data)
 
         if other.num_qubits > self.num_qubits or other.num_clbits > self.num_clbits:
             raise CircuitError(
@@ -898,6 +894,8 @@ class QuantumCircuit:
         edge_map = {**qubit_map, **clbit_map} or {**identity_qubit_map, **identity_clbit_map}
 
         mapped_instrs = []
+        if front:
+            dest._parameter_table.clear()
         for instr, qargs, cargs in instrs:
             n_qargs = [edge_map[qarg] for qarg in qargs]
             n_cargs = [edge_map[carg] for carg in cargs]
@@ -908,21 +906,19 @@ class QuantumCircuit:
 
                 n_instr.condition = DAGCircuit._map_condition(edge_map, instr.condition, self.cregs)
 
-            dest._data.apply_operation_back(n_instr, n_qargs, n_cargs)
+            if front:
+                dest._data.apply_operation_front(n_instr, n_qargs, n_cargs)
+                self._node_idx_curr = itertools.count()
+                self._node_idx_map = {}
+                for key, node in enumerate(self._data.topological_op_nodes()):
+                    self._node_idx_map[key] = node
 
-        """if front:
-            # adjust new instrs before original ones and update all parameters
-            dest._data = mapped_instrs + dest._data
-        else:
-            dest._data += mapped_instrs"""
+            else:
+                node = dest._data.apply_operation_back(n_instr, n_qargs, n_cargs)
+                idx = next(self._node_idx_curr)
+                self._node_idx_map[idx] = node
 
-        dest._data.compose(other._data, qubits=qubits, clbits=clbits, front=front, inplace=True)
-
-        #if front:
-        #   dest._parameter_table.clear()
-
-        for node in dest._node_idx_map.values():
-            dest._update_parameter_table(node.op)
+            dest._update_parameter_table(n_instr)
 
         for gate, cals in other.calibrations.items():
             dest._calibrations[gate].update(cals)
@@ -1096,7 +1092,7 @@ class QuantumCircuit:
 
     def __getitem__(self, item):
         """Return indexed operation."""
-        return([(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values()])[item]
+        return ([(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values()])[item]
         """try:
             ret = (self._node_idx_map[item].op, self._node_idx_map[item].qargs, self._node_idx_map[item].cargs)
         except KeyError:
@@ -1275,15 +1271,17 @@ class QuantumCircuit:
         :meta public:
         """
         if instruction.condition is not None:
-            if (hasattr(instruction.condition[0], "name")
-                    and instruction.condition[0].name not in self._data.cregs):
+            if (
+                hasattr(instruction.condition[0], "name")
+                and instruction.condition[0].name not in self._data.cregs
+            ):
                 self._data.add_creg(instruction.condition[0])
 
         node = self._data.apply_operation_back(instruction, qargs, cargs)
         idx = next(self._node_idx_curr)
         self._node_idx_map[idx] = node
 
-        #self._parameter_table.clear()
+        # self._parameter_table.clear()
         self._update_parameter_table(instruction)
 
         # mark as normal circuit if a new instruction is added
@@ -1294,7 +1292,6 @@ class QuantumCircuit:
 
     def _update_parameter_table(self, instruction: Instruction) -> Instruction:
 
-        #print('\ninst params', instruction.params)
         for param_index, param in enumerate(instruction.params):
             """<<<<<<< HEAD
             if isinstance(param, ParameterExpression):
@@ -2054,7 +2051,11 @@ class QuantumCircuit:
         Returns:
             list(tuple): list of (instruction, qargs, cargs).
         """
-        return [(node.op, node.qargs, node.cargs) for node in self._node_idx_map.values() if node.op.name == name]
+        return [
+            (node.op, node.qargs, node.cargs)
+            for node in self._node_idx_map.values()
+            if node.op.name == name
+        ]
 
     def num_connected_components(self, unitary_only: bool = False) -> int:
         """How many non-entangled subcircuits can the circuit be factored to.
@@ -2156,8 +2157,10 @@ class QuantumCircuit:
         Returns:
           QuantumCircuit: a deepcopy of the current circuit, with the specified name
         """
-        cpy = copy.copy(self)
-        # copy registers correctly, in copy.copy they are only copied via reference
+        # copy the _data dag and update _node_idx_map and _paramter_table
+        cpy = copy.deepcopy(self)
+
+        """# copy registers correctly, in copy.copy they are only copied via reference
         cpy.qregs = self.qregs.copy()
         cpy.cregs = self.cregs.copy()
         cpy._qubits = self._qubits.copy()
@@ -2166,27 +2169,12 @@ class QuantumCircuit:
         cpy._qubit_indices = self._qubit_indices.copy()
         cpy._clbit_indices = self._clbit_indices.copy()
 
-        # copy the _data dag and update _node_idx_map and _paramter_table
-        cpy._node_idx_map = {}
-        cpy._node_idx_curr = itertools.count()
-        cpy._data = self._copy_data()
-        for node in cpy._data.topological_op_nodes():
-            cpy._update_parameter_table(node.op)
-            idx = next(cpy._node_idx_curr)
-            cpy._node_idx_map[idx] = node
-
         cpy._calibrations = copy.deepcopy(self._calibrations)
-        cpy._metadata = copy.deepcopy(self._metadata)
+        cpy._metadata = copy.deepcopy(self._metadata)"""
 
         if name:
             cpy.name = name
         return cpy
-
-    def _copy_data(self):
-        data = copy.copy(self._data)
-        for node in self._data.topological_op_nodes():
-            data.substitute_node(node, node.op.copy())
-        return data
 
     def _create_creg(self, length: int, name: str) -> ClassicalRegister:
         """Creates a creg, checking if ClassicalRegister with same name exists"""
@@ -2651,7 +2639,6 @@ class QuantumCircuit:
                         self._parameter_table[new_parameter] = entry
             else:
                 del self._parameter_table[parameter]  # clear evaluated expressions
-
 
         if (
             isinstance(self.global_phase, ParameterExpression)
@@ -4164,7 +4151,7 @@ class QuantumCircuit:
             return self._control_flow_scopes[-1].peek()
         if not self._data:
             raise CircuitError("This circuit contains no instructions.")
-        return self._data[-1]
+        return self.data[-1]
 
     def _pop_previous_instruction_in_scope(
         self,
@@ -4179,7 +4166,7 @@ class QuantumCircuit:
             return self._control_flow_scopes[-1].pop()
         if not self._data:
             raise CircuitError("This circuit contains no instructions.")
-        instruction, qubits, clbits = self._data.pop()
+        instruction, qubits, clbits = self.data.pop()
         self._update_parameter_table_on_instruction_removal(instruction)
         return instruction, qubits, clbits
 

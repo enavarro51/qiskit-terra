@@ -299,7 +299,6 @@ class PolynomialPauliRotations(FunctionalPauliRotations):
         super()._build()
 
         circuit = QuantumCircuit(*self.qregs, name=self.name)
-        print("***********", self._data)
         qr_state = circuit.qubits[: self.num_state_qubits]
         qr_target = circuit.qubits[self.num_state_qubits]
 

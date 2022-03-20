@@ -19,6 +19,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.parametertable import ParameterTable, ParameterView
 from qiskit.dagcircuit import DAGCircuit
 
+
 class BlueprintCircuit(QuantumCircuit, ABC):
     """Blueprint circuit object.
 
@@ -59,26 +60,16 @@ class BlueprintCircuit(QuantumCircuit, ABC):
         if self._is_built:
             return
 
-        self._data = DAGCircuit()
-        self._data._global_phase = 0
-        self._data._metadata = None
-        qubits = [qbit for qreg in self._qregs for qbit in qreg]
-        self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
-        self._data.add_qubits(qubits)
-
-       # check whether the configuration is valid
+        # check whether the configuration is valid
         self._check_configuration()
         self._is_built = True
 
     def _invalidate(self) -> None:
         """Invalidate the current circuit build."""
-        #self._data = None
         self._data = DAGCircuit()
-        self._data._global_phase = 0
-        self._data._metadata = None
-        qubits = [qbit for qreg in self._qregs for qbit in qreg]
-        self._data.qregs = OrderedDict((qreg.name, qreg) for qreg in self._qregs)
-        self._data.add_qubits(qubits)
+        self._data.add_qubits(self._qubits)
+        if hasattr(self, "_clbits"):
+            self._data.add_clbits(self._clbits)
 
         self._parameter_table = ParameterTable()
         self.global_phase = 0
@@ -92,9 +83,6 @@ class BlueprintCircuit(QuantumCircuit, ABC):
     @qregs.setter
     def qregs(self, qregs):
         """Set the quantum registers associated with the circuit."""
-        self._data = DAGCircuit()
-        self._data._global_phase = 0
-        self._data._metadata = None
         self._qregs = []
         self._qubits = []
         self._ancillas = []

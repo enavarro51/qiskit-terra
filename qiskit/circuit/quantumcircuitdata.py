@@ -65,6 +65,7 @@ class QuantumCircuitData(MutableSequence):
     def insert(self, index, value):
         #self._circuit._data.insert(index, None)
         #self[index] = value
+        print("IN INSERT", index, value)
         pass
 
     def __delitem__(self, i):

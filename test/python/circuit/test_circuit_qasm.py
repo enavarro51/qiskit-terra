@@ -369,7 +369,7 @@ custom_{id(gate2)} q[1],q[0];\n"""
         self.assertEqual(expected_qasm, qc.qasm())
         # Check instruction names were not changed by qasm()
         names = ["h", "x", "custom", "custom"]
-        for idx, (instruction, _, _) in enumerate(qc._data):
+        for idx, (instruction, _, _) in enumerate(qc.data):
             self.assertEqual(instruction.name, names[idx])
 
     def test_circuit_qasm_with_invalid_identifiers(self):
@@ -421,7 +421,7 @@ custom_{id(gate2)} q[1],q[0];\n"""
 
         # Check instruction names were not changed by qasm()
         names = ["unitary", "A[$]", "invalid[name]"]
-        for idx, (instruction, _, _) in enumerate(qc._data):
+        for idx, (instruction, _, _) in enumerate(qc.data):
             self.assertEqual(instruction.name, names[idx])
 
     def test_circuit_qasm_with_duplicate_invalid_identifiers(self):
@@ -448,5 +448,5 @@ custom_{id(gate2)} q[1],q[0];\n"""
 
         # Check instruction names were not changed by qasm()
         names = ["invalid??", "invalid[]"]
-        for idx, (instruction, _, _) in enumerate(base._data):
+        for idx, (instruction, _, _) in enumerate(base.data):
             self.assertEqual(instruction.name, names[idx])

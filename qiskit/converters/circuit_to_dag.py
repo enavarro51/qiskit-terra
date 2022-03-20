@@ -60,11 +60,10 @@ def circuit_to_dag(circuit):
     for register in circuit.cregs:
         dagcircuit.add_creg(register)
 
-    #for node in circuit._node_idx_map.values():
+    # for node in circuit._node_idx_map.values():
     #    dagcircuit.apply_operation_back(node.op.copy(), node.qargs, node.cargs)
     for inst, qargs, cargs in circuit.data:
         dagcircuit.apply_operation_back(inst.copy(), qargs, cargs)
-
 
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit

@@ -51,7 +51,7 @@ def raise_if_parameter_table_invalid(circuit):  # pylint: disable=invalid-name
     # Assert parameters present in circuit match those in table.
     circuit_parameters = {
         parameter
-        for instr, qargs, cargs in circuit._data
+        for instr, qargs, cargs in circuit.data
         for param in instr.params
         for parameter in param.parameters
         if isinstance(param, ParameterExpression)
@@ -66,7 +66,7 @@ def raise_if_parameter_table_invalid(circuit):  # pylint: disable=invalid-name
         )
 
     # Assert parameter locations in table are present in circuit.
-    circuit_instructions = [instr for instr, qargs, cargs in circuit._data]
+    circuit_instructions = [instr for instr, qargs, cargs in circuit.data]
 
     for parameter, instr_list in table.items():
         for instr, param_index in instr_list:
@@ -89,7 +89,7 @@ def raise_if_parameter_table_invalid(circuit):  # pylint: disable=invalid-name
                 )
 
     # Assert circuit has no other parameter locations other than those in table.
-    for instr, _, _ in circuit._data:
+    for instr, _, _ in circuit.data:
         for param_index, param in enumerate(instr.params):
             if isinstance(param, ParameterExpression):
                 parameters = param.parameters

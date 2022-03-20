@@ -149,11 +149,11 @@ class TestQuantumCircuitDisassembler(QiskitTestCase):
         self.assertEqual(run_config_out.memory_slots, 0)
         self.assertEqual(len(circuits), 1)
         # params array
-        assert_allclose(circuits[0]._data[0][0].params[0], circ._data[0][0].params[0])
+        assert_allclose(circuits[0].data[0][0].params[0], circ.data[0][0].params[0])
         # all other data
-        self.assertEqual(circuits[0]._data[0][0].params[1:], circ._data[0][0].params[1:])
-        self.assertEqual(circuits[0]._data[0][1:], circ._data[0][1:])
-        self.assertEqual(circuits[0]._data[1:], circ._data[1:])
+        self.assertEqual(circuits[0].data[0][0].params[1:], circ.data[0][0].params[1:])
+        self.assertEqual(circuits[0].data[0][1:], circ.data[0][1:])
+        self.assertEqual(circuits[0].data[1:], circ.data[1:])
         self.assertEqual({}, header)
 
     def test_opaque_instruction(self):
