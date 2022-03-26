@@ -251,6 +251,14 @@ def _gate_to_dag(operation):
     from qiskit.converters.circuit_to_dag import circuit_to_dag
 
     if hasattr(operation, "definition") and operation.definition is not None:
+        if isinstance(operation.definition._data, list):
+            from qiskit.dagcircuit import DAGCircuit
+
+            dag = DAGCircuit()
+            for inst, qargs, cargs in operation.definition._data:
+                dag.apply_operation_back(inst, qargs, cargs)
+            operation.definition._data = dag
+            print("\n\ndef", operation.definition._data)
         return circuit_to_dag(operation.definition)
     else:
         qr = QuantumRegister(operation.num_qubits)

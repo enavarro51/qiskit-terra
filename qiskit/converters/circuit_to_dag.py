@@ -67,14 +67,15 @@ def circuit_to_dag(circuit):
 
     dagcircuit.duration = circuit.duration
     dagcircuit.unit = circuit.unit
-    """
-    if circuit._data is None:
+    """if circuit._data is None:
         dagcircuit = DAGCircuit()
     else:
-        dagcircuit = copy.deepcopy(circuit._data)
+        #print(circuit._data)
+        dagcircuit = circuit.copy()._data
 
+    if isinstance(dagcircuit, list) or isinstance(circuit, list):
+        print("\n\n\n", type(dagcircuit), type(circuit))
     dagcircuit.global_phase = circuit.global_phase
     dagcircuit.calibrations = circuit.calibrations
-    dagcircuit.metadata = circuit.metadata
-    """
+    dagcircuit.metadata = circuit.metadata"""
     return dagcircuit

@@ -108,7 +108,7 @@ class UCGate(Gate):
         )  # remove parameters since array is deprecated as parameter
 
         inverse_gate.definition = QuantumCircuit(*self.definition.qregs)
-        inverse_gate.definition._data = [
+        inverse_gate.definition.data = [
             (inst.inverse(), qargs, []) for inst, qargs, _ in reversed(self._definition)
         ]
 

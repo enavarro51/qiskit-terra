@@ -29,11 +29,16 @@ class QuantumCircuitData(MutableSequence):
         self._circuit = circuit
 
     def __getitem__(self, i):
+        """if not isinstance(i, slice) and i < 0:
+            i += len(self._circuit._node_idx_map)
         try:
-            ret = (self._circuit._node_idx_map[i].op, self._circuit._node_idx_map[i].qargs, self._circuit._node_idx_map[i].cargs)
+            node = self._circuit._node_idx_map[i]
+            ret = (node.op, node.qargs, node.cargs)
+            #ret = (self._circuit._node_idx_map[i].op, self._circuit._node_idx_map[i].qargs, self._circuit._node_idx_map[i].cargs)
         except KeyError:
-            raise IndexError
-        return ret
+            raise IndexError"""
+        node = self._circuit._nodes[i]
+        return (node.op, node.qargs, node.cargs)
 
     def __setitem__(self, key, value):
         instruction, qargs, cargs = value
@@ -63,17 +68,19 @@ class QuantumCircuitData(MutableSequence):
         self._circuit._update_parameter_table(instruction)
 
     def insert(self, index, value):
-        #self._circuit._data.insert(index, None)
+        #self._circuit._nodes.insert(index, None)
         #self[index] = value
-        print("IN INSERT", index, value)
-        pass
+        self._circuit._nodes.append(self._circuit._nodes[len(self._circuit._nodes - 1)])
+        for idx in range(len(self._circuit._nodes) - 2, index, -1):
+            self._circuit._nodes[idx] = self._circuit._nodes[idx - 1]
+        self._circuit._nodes[index] = value
 
     def __delitem__(self, i):
-        #del self._circuit._data[i]
-        #start_idx = self._circuit._data[i]._inst_idx
-        #for idx, inst in enumerate(self._circuit._data[i], self._circuit._data[-1] + 1):
-        #    inst._inst_idx = start_idx + idx
-        pass
+        #if not isinstance(i, slice) and i < 0:
+        #    i += len(self._circuit._node_idx_map)
+        self._circuit._data.remove_op_node(self._circuit._nodes[i])#self._circuit._node_idx_map[i])
+        for idx in range(i, len(self._circuit._nodes) - 1):
+            self._circuit._nodes[idx] = self._circuit._nodes[idx + 1]
 
     def __len__(self):
         return len(self._circuit._node_idx_map)
@@ -88,12 +95,12 @@ class QuantumCircuitData(MutableSequence):
         return self._circuit._data < self.__cast(other)
 
     def __le__(self, other):
-        return self._circuit._data <= self.__cast(other)
+        return self._circuit._data <= self.__cast(other)"""
 
     def __eq__(self, other):
-        return self._circuit.data == self.__cast(other)
+        return self == other
 
-    def __gt__(self, other):
+    """def __gt__(self, other):
         return self._circuit._data > self.__cast(other)
 
     def __ge__(self, other):
@@ -117,4 +124,4 @@ class QuantumCircuitData(MutableSequence):
 
     def copy(self):
         """Returns a shallow copy of instruction list."""
-        return copy.copy(self._circuit._data)
+        return self._circuit._data.topological_op_nodes()#copy.deepcopy(self._circuit._data)

@@ -2028,7 +2028,7 @@ class TestControlFlowBuilders(QiskitTestCase):
                 test.cx(1, 0)
                 test.measure(2, 2)
             if_instruction, _, _ = test.data[0]
-            true_body, false_body = if_instruction.blocks
+            (true_body, false_body) = if_instruction.blocks
             self.assertEqual(true_body, true_body.copy())
             self.assertEqual(true_body, copy.copy(true_body))
             self.assertEqual(true_body, copy.deepcopy(true_body))

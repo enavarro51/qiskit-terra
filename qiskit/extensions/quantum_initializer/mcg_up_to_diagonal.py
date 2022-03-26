@@ -82,7 +82,7 @@ class MCGupDiag(Gate):
         )  # removing the params because arrays are deprecated
 
         inverse_gate.definition = QuantumCircuit(*self.definition.qregs)
-        inverse_gate.definition._data = [
+        inverse_gate.definition.data = [
             (inst.inverse(), qargs, []) for inst, qargs, _ in reversed(self._definition)
         ]
 

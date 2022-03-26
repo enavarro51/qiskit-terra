@@ -503,14 +503,14 @@ class LinComb(CircuitGradient):
         """
         # copy the input circuit taking the gates by reference
         out = QuantumCircuit(*circuit.qregs)
-        out._data = circuit._data.copy()
+        out.data = circuit.data.copy()
         out._parameter_table = ParameterTable(
             {param: values.copy() for param, values in circuit._parameter_table.items()}
         )
 
         # get the data index and qubits of the target gate  TODO use built-in
         gate_idx, gate_qubits = None, None
-        for i, (op, qarg, _) in enumerate(out._data):
+        for i, (op, qarg, _) in enumerate(out.data):
             if op is gate:
                 gate_idx, gate_qubits = i, qarg
                 break
@@ -574,10 +574,10 @@ class LinComb(CircuitGradient):
         # replace the parameter we compute the derivative of with the replacement
         # TODO can this be done more efficiently?
         if trim_after_grad_gate:  # remove everything after the gradient gate
-            out._data[gate_idx:] = replacement
+            out.data[gate_idx:] = replacement
             # reset parameter table
             table = ParameterTable()
-            for op, _, _ in out._data:
+            for op, _, _ in out.data:
                 for idx, param_expression in enumerate(op.params):
                     if isinstance(param_expression, ParameterExpression):
                         for param in param_expression.parameters:
@@ -589,7 +589,7 @@ class LinComb(CircuitGradient):
             out._parameter_table = table
 
         else:
-            out._data[gate_idx : gate_idx + 1] = replacement
+            out.data[gate_idx : gate_idx + 1] = replacement
 
         return out
 

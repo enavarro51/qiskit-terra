@@ -113,7 +113,7 @@ class LinCombFull(CircuitQFI):
 
                     # get the location of gate_i, used for trimming
                     location_i = None
-                    for idx, (op, _, _) in enumerate(state_qc._data):
+                    for idx, (op, _, _) in enumerate(state_qc.data):
                         if op is gate_i:
                             location_i = idx
                             break
@@ -127,7 +127,7 @@ class LinCombFull(CircuitQFI):
 
                             # get the location of gate_j, used for trimming
                             location_j = None
-                            for idx, (op, _, _) in enumerate(state_qc._data):
+                            for idx, (op, _, _) in enumerate(state_qc.data):
                                 if op is gate_j:
                                     location_j = idx
                                     break

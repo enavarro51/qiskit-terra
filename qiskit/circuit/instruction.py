@@ -381,7 +381,7 @@ class Instruction:
             *self.definition.cregs,
             global_phase=-self.definition.global_phase,
         )
-        inverse_gate.definition._data = [
+        inverse_gate.definition.data = [
             (inst.inverse(), qargs, cargs) for inst, qargs, cargs in reversed(self._definition)
         ]
 
