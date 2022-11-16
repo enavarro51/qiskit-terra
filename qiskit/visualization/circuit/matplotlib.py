@@ -408,6 +408,7 @@ class MatplotlibDrawer:
 
     def _get_layer_widths(self):
         """Compute the layer_widths for the layers"""
+        print(self._nodes)
         for layer in self._nodes:
             widest_box = WID
             for node in layer:
@@ -488,6 +489,9 @@ class MatplotlibDrawer:
                             qubits, clbits, nodes, circuit=node.op.params[0]
                         )
                         self._flow_nodes[node] = flow_node
+                        print("\nin layer width", self._flow_nodes)
+                        print(flow_node)
+                        print(node)
                         flow_node._wire_map = self._wire_map
                         flow_node._get_layer_widths()
                         flow_node._set_bit_reg_info()
@@ -842,6 +846,7 @@ class MatplotlibDrawer:
                             flow_node._flow_bit_map[fnode_cpy.op.condition[0]],
                             fnode_cpy.op.condition[1],
                         )
+            print("\nin draw ops", flow_node._nodes)
             self._nodes += flow_node._nodes
             self._layer_widths += flow_node._layer_widths
             self._data.update(flow_node._data)
@@ -859,7 +864,8 @@ class MatplotlibDrawer:
 
                 if verbose:
                     print(op)
-
+                print('flow_nodes of nodes', self._flow_nodes)
+                print(node)
                 if isinstance(op, ControlFlowOp):
                     self._flow_nodes[node]._get_coords(is_flow=True, parent=self, flow_node=node)
 
