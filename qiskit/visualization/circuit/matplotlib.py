@@ -14,6 +14,7 @@
 
 """mpl circuit visualization backend."""
 
+import itertools
 import re
 from warnings import warn
 import copy
@@ -78,7 +79,7 @@ class MatplotlibDrawer:
         fold=25,
         ax=None,
         initial_state=False,
-        cregbundle=True,
+        cregbundle=None,
         global_phase=None,
         qregs=None,
         cregs=None,
@@ -196,9 +197,22 @@ class MatplotlibDrawer:
         self._ax.tick_params(labelbottom=False, labeltop=False, labelleft=False, labelright=False)
 
         self._initial_state = initial_state
-        self._cregbundle = cregbundle
         self._global_phase = self._circuit.global_phase
         self._calibrations = self._circuit.calibrations
+
+        for node in itertools.chain.from_iterable(self._nodes):
+            if node.cargs and node.op.name != "measure":
+                if cregbundle:
+                    warn(
+                        "Cregbundle set to False since an instruction needs to refer"
+                        " to individual classical wire",
+                        RuntimeWarning,
+                        3,
+                    )
+                self._cregbundle = False
+                break
+        else:
+            self._cregbundle = True if cregbundle is None else cregbundle
 
         self._fs = self._style["fs"]
         self._sfs = self._style["sfs"]
