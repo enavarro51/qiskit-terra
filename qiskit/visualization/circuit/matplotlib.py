@@ -518,7 +518,10 @@ class MatplotlibDrawer:
                         )
                         raw_gate_width = 0.0
                         for width in flow_node._layer_widths:
+                            print("\nFlow node widths", width)
                             raw_gate_width += width
+                        if raw_gate_width == 0.0:
+                            raw_gate_width = 1.0
                         gate_width = raw_gate_width
                     else:
                         raw_gate_width = self._get_text_width(gate_text, fontsize=self._fs)
@@ -861,6 +864,7 @@ class MatplotlibDrawer:
                             fnode_cpy.op.condition[1],
                         )
             print("\nin draw ops", flow_node._nodes)
+            print("FLOW NODE", flow_node)
             self._nodes += flow_node._nodes
             self._layer_widths += flow_node._layer_widths
             self._data.update(flow_node._data)
@@ -1229,40 +1233,17 @@ class MatplotlibDrawer:
 
         qubit_span = abs(ypos) - abs(ypos_max) + 1
         height = HIG + (qubit_span - 1)
-        if isinstance(node.op, ControlFlowOp):
-            ec = self._style["lc"]
-            fc = "none"
-            # xpos -= 0.1
-            ypos += 0.05
-            height += 0.08
-        else:
-            ec = self._data[node]["ec"]
-            fc = self._data[node]["fc"]
 
         box = self._patches_mod.Rectangle(
             xy=(xpos - 0.5 * wid, ypos - 0.5 * HIG),
             width=wid,
             height=height,
-            fc=fc,
-            ec=ec,
+            fc=self._data[node]["fc"],
+            ec=self._data[node]["ec"],
             linewidth=self._lwidth15,
             zorder=PORDER_GATE,
         )
         self._ax.add_patch(box)
-
-        if isinstance(node.op, ControlFlowOp):
-            self._ax.text(
-                xpos + 0.2 - 0.5 * wid,
-                ypos_max + 0.45,
-                "if clbig[0] == True",
-                ha="left",
-                va="center",
-                fontsize=self._fs,
-                color=self._data[node]["gt"],
-                clip_on=True,
-                zorder=10,
-            )
-            return
 
         # annotate inputs
         for bit, y in enumerate([x[1] for x in xy]):
@@ -1324,10 +1305,11 @@ class MatplotlibDrawer:
         if xy is None:
             xy = self._data[node]["q_xy"]
 
-        xpos = min(x[0] for x in xy)
+        xpos = min(x[0] for x in xy) - 0.33
         ypos = min(y[1] for y in xy) - 0.1
         ypos_max = max(y[1] for y in xy)
-        wid = max(self._data[node]["width"] + 0.21, WID)
+        wid = max(self._data[node]["width"] - .16, WID)
+        print("\nWIDTH *******", self._data[node]["width"], WID)
 
         qubit_span = abs(ypos) - abs(ypos_max) + 1
         height = HIG + (qubit_span - 1) + 0.08
