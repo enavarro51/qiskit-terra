@@ -1881,7 +1881,7 @@ class TestReplaceBlock(QiskitTestCase):
         dag.add_qreg(qr)
         node = dag.apply_operation_back(HGate(), [qr[0]])
         new_node = dag.replace_block_with_op(
-            [node], XGate(), {bit: idx for (idx, bit) in enumerate(dag.qubits)}
+            [node], XGate(), dag.qubit_map
         )
 
         expected_dag = DAGCircuit()

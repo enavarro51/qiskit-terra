@@ -88,6 +88,10 @@ class DAGCircuit:
         self.qubits: List[Qubit] = []
         self.clbits: List[Clbit] = []
 
+        # Maps of bits to indices
+        self._qubit_map = OrderedDict()
+        self._clbit_map = OrderedDict()
+
         self._global_phase = 0
         self._calibrations = defaultdict(dict)
 
@@ -129,6 +133,32 @@ class DAGCircuit:
                 self._global_phase = 0
             else:
                 self._global_phase = angle % (2 * math.pi)
+
+    @property
+    def qubit_map(self):
+        """Return mapping of qubits to indices."""
+        return self._qubit_map
+
+    @qubit_map.setter
+    def qubit_map(self, mapping):
+        """Set the qubit mapping.
+
+        The mapping maps qubits to their index in the qubits list.
+        """
+        self._qubit_map = mapping
+
+    @property
+    def clbit_map(self):
+        """Return mapping of clbits to indices."""
+        return self._clbit_map
+
+    @clbit_map.setter
+    def clbit_map(self, mapping):
+        """Set the clbit mapping.
+
+        The mapping maps clbits to their index in the clbits list.
+        """
+        self._clbit_map = mapping
 
     @property
     def calibrations(self):
@@ -219,9 +249,11 @@ class DAGCircuit:
         if duplicate_qubits:
             raise DAGCircuitError("duplicate qubits %s" % duplicate_qubits)
 
-        self.qubits.extend(qubits)
-        for qubit in qubits:
+        for i, qubit in enumerate(qubits):
+            self._qubit_map[qubit] = len(self.qubits) + i
             self._add_wire(qubit)
+
+        self.qubits.extend(qubits)
 
     def add_clbits(self, clbits):
         """Add individual clbit wires."""
@@ -232,9 +264,11 @@ class DAGCircuit:
         if duplicate_clbits:
             raise DAGCircuitError("duplicate clbits %s" % duplicate_clbits)
 
-        self.clbits.extend(clbits)
-        for clbit in clbits:
+        for i, clbit in enumerate(clbits):
+            self._clbit_map[clbit] = len(self.clbits) + i
             self._add_wire(clbit)
+
+        self.clbits.extend(clbits)
 
     def add_qreg(self, qreg):
         """Add all wires in a quantum register."""
@@ -247,6 +281,7 @@ class DAGCircuit:
         for j in range(qreg.size):
             if qreg[j] not in existing_qubits:
                 self.qubits.append(qreg[j])
+                self._qubit_map[qreg[j]] = len(self.qubits)
                 self._add_wire(qreg[j])
 
     def add_creg(self, creg):
@@ -260,6 +295,7 @@ class DAGCircuit:
         for j in range(creg.size):
             if creg[j] not in existing_clbits:
                 self.clbits.append(creg[j])
+                self._clbit_map[creg[j]] = len(self.clbits)
                 self._add_wire(creg[j])
 
     def _add_wire(self, wire):
@@ -319,6 +355,7 @@ class DAGCircuit:
         self.remove_cregs(*cregs_to_remove)
 
         for clbit in clbits:
+            del self._clbit_map[clbit]
             self._remove_idle_wire(clbit)
             self.clbits.remove(clbit)
 
@@ -376,12 +413,13 @@ class DAGCircuit:
         self.remove_qregs(*qregs_to_remove)
 
         for qubit in qubits:
+            del self._qubit_map[qubit]
             self._remove_idle_wire(qubit)
             self.qubits.remove(qubit)
 
     def remove_qregs(self, *qregs):
         """
-        Remove classical registers from the circuit, leaving underlying bits
+        Remove quantum registers from the circuit, leaving underlying bits
         in place.
 
         Raises:
