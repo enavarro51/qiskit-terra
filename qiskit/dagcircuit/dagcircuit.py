@@ -280,9 +280,9 @@ class DAGCircuit:
         existing_qubits = set(self.qubits)
         for j in range(qreg.size):
             if qreg[j] not in existing_qubits:
-                self.qubits.append(qreg[j])
                 self._qubit_map[qreg[j]] = len(self.qubits)
                 self._add_wire(qreg[j])
+                self.qubits.append(qreg[j])
 
     def add_creg(self, creg):
         """Add all wires in a classical register."""
@@ -294,9 +294,9 @@ class DAGCircuit:
         existing_clbits = set(self.clbits)
         for j in range(creg.size):
             if creg[j] not in existing_clbits:
-                self.clbits.append(creg[j])
                 self._clbit_map[creg[j]] = len(self.clbits)
                 self._add_wire(creg[j])
+                self.clbits.append(creg[j])
 
     def _add_wire(self, wire):
         """Add a qubit or bit to the circuit.

@@ -207,20 +207,18 @@ class SabreLayout(TransformationPass):
             self.routing_pass.fake_run = False
             return dag
         dist_matrix = self.coupling_map.distance_matrix
-        original_qubit_indices = {bit: index for index, bit in enumerate(dag.qubits)}
-        original_clbit_indices = {bit: index for index, bit in enumerate(dag.clbits)}
 
         dag_list = []
         for node in dag.topological_op_nodes():
-            cargs = {original_clbit_indices[x] for x in node.cargs}
+            cargs = {dag.clbit_map[x] for x in node.cargs}
             if node.op.condition is not None:
                 for clbit in dag._bits_in_condition(node.op.condition):
-                    cargs.add(original_clbit_indices[clbit])
+                    cargs.add(dag.clbit_map[clbit])
 
             dag_list.append(
                 (
                     node._node_id,
-                    [original_qubit_indices[x] for x in node.qargs],
+                    [dag.qubit_map[x] for x in node.qargs],
                     cargs,
                 )
             )

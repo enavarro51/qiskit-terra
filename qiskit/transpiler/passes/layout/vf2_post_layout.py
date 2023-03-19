@@ -244,7 +244,7 @@ class VF2PostLayout(AnalysisPass):
         )
         try:
             if self.strict_direction:
-                initial_layout = Layout({bit: index for index, bit in enumerate(dag.qubits)})
+                initial_layout = Layout(dag.qubit_map)
                 chosen_layout_score = self._score_layout(
                     initial_layout, im_graph_node_map, reverse_im_graph_node_map, im_graph
                 )

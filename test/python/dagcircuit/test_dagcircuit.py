@@ -1864,14 +1864,14 @@ class TestReplaceBlock(QiskitTestCase):
             self.dag.replace_block_with_op(
                 [nodes[0], nodes[-1]],
                 CZGate(),
-                {bit: idx for (idx, bit) in enumerate(self.dag.qubits)},
+                self.dag.qubit_map
             )
 
     def test_empty(self):
         """Test that an empty node block raises."""
         with self.assertRaises(DAGCircuitError):
             self.dag.replace_block_with_op(
-                [], CZGate(), {bit: idx for (idx, bit) in enumerate(self.dag.qubits)}
+                [], CZGate(), self.dag.qubit_map
             )
 
     def test_single_node_block(self):

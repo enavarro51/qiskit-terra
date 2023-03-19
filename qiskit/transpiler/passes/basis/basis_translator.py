@@ -121,7 +121,6 @@ class BasisTranslator(TransformationPass):
         if self._target_basis is None and self._target is None:
             return dag
 
-        qarg_indices = {qubit: index for index, qubit in enumerate(dag.qubits)}
         # Names of instructions assumed to supported by any backend.
         if self._target is None:
             basic_instrs = ["measure", "reset", "barrier", "snapshot", "delay"]
@@ -131,7 +130,7 @@ class BasisTranslator(TransformationPass):
         else:
             basic_instrs = ["barrier", "snapshot"]
             target_basis = self._target.keys() - set(self._non_global_operations)
-            source_basis, qargs_local_source_basis = self._extract_basis_target(dag, qarg_indices)
+            source_basis, qargs_local_source_basis = self._extract_basis_target(dag, dag.qubit_map)
 
         target_basis = set(target_basis).union(basic_instrs)
 
@@ -250,7 +249,7 @@ class BasisTranslator(TransformationPass):
                 dag_updated = True
             return dag_updated
 
-        apply_translation(dag, qarg_indices)
+        apply_translation(dag, dag.qubit_map)
         replace_end_time = time.time()
         logger.info(
             "Basis translation instructions replaced in %.3fs.",
