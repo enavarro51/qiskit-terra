@@ -20,7 +20,7 @@ to the input of B. The object's methods allow circuits to be constructed,
 composed, and modified. Some natural properties like depth can be computed
 directly from the graph.
 """
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, namedtuple
 import copy
 import itertools
 import math
@@ -39,6 +39,9 @@ from qiskit.circuit.parameterexpression import ParameterExpression
 from qiskit.dagcircuit.exceptions import DAGCircuitError
 from qiskit.dagcircuit.dagnode import DAGNode, DAGOpNode, DAGInNode, DAGOutNode
 from qiskit.utils.deprecation import deprecate_function
+from qiskit.circuit.bit import Bit
+
+BitLocations = namedtuple("BitLocations", ("index", "registers"))
 
 
 class DAGCircuit:
@@ -89,8 +92,8 @@ class DAGCircuit:
         self.clbits: List[Clbit] = []
 
         # Maps of bits to indices
-        self._qubit_map = OrderedDict()
-        self._clbit_map = OrderedDict()
+        self._qubit_indices = {}
+        self._clbit_indices = {}
 
         self._global_phase = 0
         self._calibrations = defaultdict(dict)
@@ -133,32 +136,6 @@ class DAGCircuit:
                 self._global_phase = 0
             else:
                 self._global_phase = angle % (2 * math.pi)
-
-    @property
-    def qubit_map(self):
-        """Return mapping of qubits to indices."""
-        return self._qubit_map
-
-    @qubit_map.setter
-    def qubit_map(self, mapping):
-        """Set the qubit mapping.
-
-        The mapping maps qubits to their index in the qubits list.
-        """
-        self._qubit_map = mapping
-
-    @property
-    def clbit_map(self):
-        """Return mapping of clbits to indices."""
-        return self._clbit_map
-
-    @clbit_map.setter
-    def clbit_map(self, mapping):
-        """Set the clbit mapping.
-
-        The mapping maps clbits to their index in the clbits list.
-        """
-        self._clbit_map = mapping
 
     @property
     def calibrations(self):
@@ -250,7 +227,7 @@ class DAGCircuit:
             raise DAGCircuitError("duplicate qubits %s" % duplicate_qubits)
 
         for i, qubit in enumerate(qubits):
-            self._qubit_map[qubit] = len(self.qubits) + i
+            self._qubit_indices[qubit] = len(self.qubits) + i
             self._add_wire(qubit)
 
         self.qubits.extend(qubits)
@@ -265,7 +242,7 @@ class DAGCircuit:
             raise DAGCircuitError("duplicate clbits %s" % duplicate_clbits)
 
         for i, clbit in enumerate(clbits):
-            self._clbit_map[clbit] = len(self.clbits) + i
+            self._clbit_indices[clbit] = len(self.clbits) + i
             self._add_wire(clbit)
 
         self.clbits.extend(clbits)
@@ -280,7 +257,7 @@ class DAGCircuit:
         existing_qubits = set(self.qubits)
         for j in range(qreg.size):
             if qreg[j] not in existing_qubits:
-                self._qubit_map[qreg[j]] = len(self.qubits)
+                self._qubit_indices[qreg[j]] = len(self.qubits)
                 self._add_wire(qreg[j])
                 self.qubits.append(qreg[j])
 
@@ -294,7 +271,7 @@ class DAGCircuit:
         existing_clbits = set(self.clbits)
         for j in range(creg.size):
             if creg[j] not in existing_clbits:
-                self._clbit_map[creg[j]] = len(self.clbits)
+                self._clbit_indices[creg[j]] = len(self.clbits)
                 self._add_wire(creg[j])
                 self.clbits.append(creg[j])
 
@@ -322,6 +299,41 @@ class DAGCircuit:
             self._multi_graph.add_edge(inp_node._node_id, outp_node._node_id, wire)
         else:
             raise DAGCircuitError(f"duplicate wire {wire}")
+
+    def find_bit(self, bit: Bit) -> BitLocations:
+        """Find locations in the circuit which can be used to reference a given :obj:`~Bit`.
+
+        Args:
+            bit (Bit): The bit to locate.
+
+        Returns:
+            namedtuple(int, List[Tuple(Register, int)]): A 2-tuple. The first element (``index``)
+                contains the index at which the ``Bit`` can be found (in either
+                :obj:`~QuantumCircuit.qubits`, :obj:`~QuantumCircuit.clbits`, depending on its
+                type). The second element (``registers``) is a list of ``(register, index)``
+                pairs with an entry for each :obj:`~Register` in the circuit which contains the
+                :obj:`~Bit` (and the index in the :obj:`~Register` at which it can be found).
+
+        Notes:
+            The circuit index of an :obj:`~AncillaQubit` will be its index in
+            :obj:`~QuantumCircuit.qubits`, not :obj:`~QuantumCircuit.ancillas`.
+
+        Raises:
+            CircuitError: If the supplied :obj:`~Bit` was of an unknown type.
+            CircuitError: If the supplied :obj:`~Bit` could not be found on the circuit.
+        """
+
+        try:
+            if isinstance(bit, Qubit):
+                return self._qubit_indices[bit]
+            elif isinstance(bit, Clbit):
+                return self._clbit_indices[bit]
+            else:
+                raise CircuitError(f"Could not locate bit of unknown type: {type(bit)}")
+        except KeyError as err:
+            raise CircuitError(
+                f"Could not locate provided bit: {bit}. Has it been added to the QuantumCircuit?"
+            ) from err
 
     def remove_clbits(self, *clbits):
         """
@@ -355,7 +367,7 @@ class DAGCircuit:
         self.remove_cregs(*cregs_to_remove)
 
         for clbit in clbits:
-            del self._clbit_map[clbit]
+            del self._clbit_indices[clbit]
             self._remove_idle_wire(clbit)
             self.clbits.remove(clbit)
 
@@ -413,7 +425,7 @@ class DAGCircuit:
         self.remove_qregs(*qregs_to_remove)
 
         for qubit in qubits:
-            del self._qubit_map[qubit]
+            del self._qubit_indices[qubit]
             self._remove_idle_wire(qubit)
             self.qubits.remove(qubit)
 
@@ -801,10 +813,10 @@ class DAGCircuit:
             )
 
         # number of qubits and clbits must match number in circuit or None
-        identity_qubit_map = dict(zip(other.qubits, self.qubits))
-        identity_clbit_map = dict(zip(other.clbits, self.clbits))
+        identity_qubit_indices = dict(zip(other.qubits, self.qubits))
+        identity_clbit_indices = dict(zip(other.clbits, self.clbits))
         if qubits is None:
-            qubit_map = identity_qubit_map
+            qubit_map = identity_qubit_indices
         elif len(qubits) != len(other.qubits):
             raise DAGCircuitError(
                 "Number of items in qubits parameter does not"
@@ -816,7 +828,7 @@ class DAGCircuit:
                 for i, q in enumerate(qubits)
             }
         if clbits is None:
-            clbit_map = identity_clbit_map
+            clbit_map = identity_clbit_indices
         elif len(clbits) != len(other.clbits):
             raise DAGCircuitError(
                 "Number of items in clbits parameter does not"
@@ -831,7 +843,7 @@ class DAGCircuit:
 
         # if no edge_map, try to do a 1-1 mapping in order
         if edge_map is None:
-            edge_map = {**identity_qubit_map, **identity_clbit_map}
+            edge_map = {**identity_qubit_indices, **identity_clbit_indices}
 
         # Check the edge_map for duplicate values
         if len(set(edge_map.values())) != len(edge_map):
@@ -1128,7 +1140,7 @@ class DAGCircuit:
         """
         return (nd for nd in self.topological_nodes(key) if isinstance(nd, DAGOpNode))
 
-    def replace_block_with_op(self, node_block, op, wire_pos_map, cycle_check=True):
+    def replace_block_with_op(self, node_block, op, wire_pos_map=None, cycle_check=True):
         """Replace a block of nodes with a single node.
 
         This is used to consolidate a block of DAGOpNodes into a single
@@ -1174,6 +1186,9 @@ class DAGCircuit:
             block_qargs |= set(nd.qargs)
             if isinstance(nd, DAGOpNode) and getattr(nd.op, "condition", None):
                 block_cargs |= set(nd.cargs)
+
+        if wire_pos_map is None:
+            wire_pos_map = self._qubit_indices
 
         # Create replacement node
         new_node = DAGOpNode(
