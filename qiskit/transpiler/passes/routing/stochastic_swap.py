@@ -72,7 +72,6 @@ class StochasticSwap(TransformationPass):
         self.fake_run = fake_run
         self.qregs = None
         self.initial_layout = initial_layout
-        self._qubit_to_int = None
         self._int_to_qubit = None
 
     def run(self, dag):
@@ -105,7 +104,6 @@ class StochasticSwap(TransformationPass):
             self.initial_layout = Layout.generate_trivial_layout(canonical_register)
         # Qubit indices are used to assign an integer to each virtual qubit during the routing: it's
         # a mapping of {virtual: virtual}, for converting between Python and Rust forms.
-        self._qubit_to_int = {bit: idx for idx, bit in enumerate(dag.qubits)}
         self._int_to_qubit = tuple(dag.qubits)
 
         self.qregs = dag.qregs
@@ -114,7 +112,7 @@ class StochasticSwap(TransformationPass):
         new_dag = self._mapper(dag, self.coupling_map, trials=self.trials)
         return new_dag
 
-    def _layer_permutation(self, layer_partition, layout, qubit_subset, coupling, trials):
+    def _layer_permutation(self, layer_partition, layout, qubit_subset, coupling, trials, dag=None):
         """Find a swap circuit that implements a permutation for this layer.
 
         The goal is to swap qubits such that qubits in the same two-qubit gates
@@ -183,18 +181,18 @@ class StochasticSwap(TransformationPass):
 
         cdist2 = coupling._dist_matrix**2
         int_qubit_subset = np.fromiter(
-            (self._qubit_to_int[bit] for bit in qubit_subset),
+            (dag.find_bit(bit) for bit in qubit_subset),
             dtype=np.uintp,
             count=len(qubit_subset),
         )
 
         int_gates = np.fromiter(
-            (self._qubit_to_int[bit] for gate in gates for bit in gate),
+            (dag.find_bit(bit) for gate in gates for bit in gate),
             dtype=np.uintp,
             count=2 * len(gates),
         )
 
-        layout_mapping = {self._qubit_to_int[k]: v for k, v in layout.get_virtual_bits().items()}
+        layout_mapping = {dag.find_bit(k): v for k, v in layout.get_virtual_bits().items()}
         int_layout = nlayout.NLayout(layout_mapping, num_qubits, coupling.size())
 
         trial_circuit = DAGCircuit()  # SWAP circuit for slice of swaps in this trial
@@ -294,7 +292,7 @@ class StochasticSwap(TransformationPass):
             # First try and compute a route for the entire layer in one go.
             if not layer["graph"].op_nodes(op=ControlFlowOp):
                 success_flag, best_circuit, best_depth, best_layout = self._layer_permutation(
-                    layer["partition"], layout, qubit_subset, coupling_graph, trials
+                    layer["partition"], layout, qubit_subset, coupling_graph, trials, dagcircuit_output
                 )
 
                 logger.debug("mapper: layer %d", i)
@@ -322,7 +320,7 @@ class StochasticSwap(TransformationPass):
                     )
                 else:
                     (success_flag, best_circuit, best_depth, best_layout) = self._layer_permutation(
-                        serial_layer["partition"], layout, qubit_subset, coupling_graph, trials
+                        serial_layer["partition"], layout, qubit_subset, coupling_graph, trials, dagcircuit_output
                     )
                     logger.debug("mapper: layer %d, sublayer %d", i, j)
                     logger.debug(

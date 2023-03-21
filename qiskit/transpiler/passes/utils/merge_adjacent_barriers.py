@@ -57,9 +57,7 @@ class MergeAdjacentBarriers(TransformationPass):
 
     def run(self, dag):
         """Run the MergeAdjacentBarriers pass on `dag`."""
-        indices = {qubit: index for index, qubit in enumerate(dag.qubits)}
-
-        # sorted to so that they are in the order they appear in the DAG
+        # sorted so that they are in the order they appear in the DAG
         # so ancestors/descendants makes sense
         barriers = [nd for nd in dag.topological_op_nodes() if nd.name == "barrier"]
 
@@ -79,7 +77,7 @@ class MergeAdjacentBarriers(TransformationPass):
                     qubits = node_to_barrier_qubits[node]
                     # qubits are stored as a set, need to convert to a list
                     new_dag.apply_operation_back(
-                        Barrier(len(qubits)), qargs=sorted(qubits, key=indices.get)
+                        Barrier(len(qubits)), qargs=sorted(qubits, key=dag._qubit_indices.get)
                     )
             else:
                 # copy the condition over too

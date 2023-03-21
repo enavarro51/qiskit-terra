@@ -1864,14 +1864,13 @@ class TestReplaceBlock(QiskitTestCase):
             self.dag.replace_block_with_op(
                 [nodes[0], nodes[-1]],
                 CZGate(),
-                {bit: idx for (idx, bit) in enumerate(self.dag.qubits)},
             )
 
     def test_empty(self):
         """Test that an empty node block raises."""
         with self.assertRaises(DAGCircuitError):
             self.dag.replace_block_with_op(
-                [], CZGate(), {bit: idx for (idx, bit) in enumerate(self.dag.qubits)}
+                [], CZGate()
             )
 
     def test_single_node_block(self):
@@ -1881,7 +1880,7 @@ class TestReplaceBlock(QiskitTestCase):
         dag.add_qreg(qr)
         node = dag.apply_operation_back(HGate(), [qr[0]])
         new_node = dag.replace_block_with_op(
-            [node], XGate(), {bit: idx for (idx, bit) in enumerate(dag.qubits)}
+            [node], XGate()
         )
 
         expected_dag = DAGCircuit()

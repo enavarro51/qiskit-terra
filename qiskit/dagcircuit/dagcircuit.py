@@ -813,10 +813,10 @@ class DAGCircuit:
             )
 
         # number of qubits and clbits must match number in circuit or None
-        identity_qubit_indices = dict(zip(other.qubits, self.qubits))
-        identity_clbit_indices = dict(zip(other.clbits, self.clbits))
+        identity_qubit_map = dict(zip(other.qubits, self.qubits))
+        identity_clbit_map = dict(zip(other.clbits, self.clbits))
         if qubits is None:
-            qubit_map = identity_qubit_indices
+            qubit_map = identity_qubit_map
         elif len(qubits) != len(other.qubits):
             raise DAGCircuitError(
                 "Number of items in qubits parameter does not"
@@ -828,7 +828,7 @@ class DAGCircuit:
                 for i, q in enumerate(qubits)
             }
         if clbits is None:
-            clbit_map = identity_clbit_indices
+            clbit_map = identity_clbit_map
         elif len(clbits) != len(other.clbits):
             raise DAGCircuitError(
                 "Number of items in clbits parameter does not"
@@ -843,7 +843,7 @@ class DAGCircuit:
 
         # if no edge_map, try to do a 1-1 mapping in order
         if edge_map is None:
-            edge_map = {**identity_qubit_indices, **identity_clbit_indices}
+            edge_map = {**identity_qubit_map, **identity_clbit_map}
 
         # Check the edge_map for duplicate values
         if len(set(edge_map.values())) != len(edge_map):
