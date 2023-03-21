@@ -210,15 +210,15 @@ class SabreLayout(TransformationPass):
 
         dag_list = []
         for node in dag.topological_op_nodes():
-            cargs = {dag.clbit_map[x] for x in node.cargs}
+            cargs = {dag.find_bit(x) for x in node.cargs}
             if node.op.condition is not None:
                 for clbit in dag._bits_in_condition(node.op.condition):
-                    cargs.add(dag.clbit_map[clbit])
+                    cargs.add(dag.find_bit(clbit))
 
             dag_list.append(
                 (
                     node._node_id,
-                    [dag.qubit_map[x] for x in node.qargs],
+                    [dag.find_bit(x) for x in node.qargs],
                     cargs,
                 )
             )

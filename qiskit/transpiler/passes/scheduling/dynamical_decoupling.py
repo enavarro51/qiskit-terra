@@ -180,10 +180,9 @@ class DynamicalDecoupling(TransformationPass):
 
         new_dag = dag.copy_empty_like()
 
-        qubit_index_map = {qubit: index for index, qubit in enumerate(new_dag.qubits)}
         index_sequence_duration_map = {}
         for qubit in new_dag.qubits:
-            physical_qubit = qubit_index_map[qubit]
+            physical_qubit = dag.find_bit(qubit)
             dd_sequence_duration = 0
             for gate in self._dd_sequence:
                 gate.duration = self._durations.get(gate, physical_qubit)

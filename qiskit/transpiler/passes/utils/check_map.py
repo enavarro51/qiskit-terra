@@ -49,7 +49,6 @@ class CheckMap(AnalysisPass):
         if self.coupling_map is None or len(self.coupling_map.graph) == 0:
             return
 
-        qubit_indices = {bit: index for index, bit in enumerate(dag.qubits)}
         # Use dist matrix directly to avoid validation overhead
         dist_matrix = self.coupling_map.distance_matrix
         for node in dag.op_nodes(include_directives=False):
@@ -57,8 +56,8 @@ class CheckMap(AnalysisPass):
             if len(node.qargs) == 2 and not is_controlflow_op:
                 if dag.has_calibration_for(node):
                     continue
-                physical_q0 = qubit_indices[node.qargs[0]]
-                physical_q1 = qubit_indices[node.qargs[1]]
+                physical_q0 = dag.find_bit(node.qargs[0])
+                physical_q1 = dag.find_bit(node.qargs[1])
                 if dist_matrix[physical_q0, physical_q1] != 1:
                     self.property_set["check_map_msg"] = "{}({}, {}) failed".format(
                         node.name,
@@ -68,7 +67,7 @@ class CheckMap(AnalysisPass):
                     self.property_set["is_swap_mapped"] = False
                     return
             elif is_controlflow_op:
-                order = [qubit_indices[bit] for bit in node.qargs]
+                order = [dag.find_bit(bit) for bit in node.qargs]
                 for block in node.op.blocks:
                     dag_block = circuit_to_dag(block)
                     mapped_dag = dag.copy_empty_like()
