@@ -91,7 +91,7 @@ class DAGCircuit:
         self.qubits: List[Qubit] = []
         self.clbits: List[Clbit] = []
 
-        # Maps of bits to indices
+        # Maps of qubits and clbits to indices
         self._qubit_indices = {}
         self._clbit_indices = {}
 
