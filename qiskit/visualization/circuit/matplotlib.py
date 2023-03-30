@@ -609,7 +609,7 @@ class MatplotlibDrawer:
 
         self._x_offset = -1.2 + longest_wire_label_width
 
-    def _get_coords(self, is_flow=False, parent=None, flow_node=None):
+    def _get_coords(self, parent=None, flow_node=None):
         """Load all the coordinate info needed to place the gates on the drawing"""
 
         # create the anchor arrays
@@ -642,27 +642,33 @@ class MatplotlibDrawer:
                             c_indxs.append(self._wire_map[register])
                         else:
                             c_indxs.append(self._wire_map[carg])
+                flow_x = isinstance(node.op, ControlFlowOp)
+                print()
+                print(flow_x, node.op)
 
                 # qubit coordinate
                 self._data[node]["q_xy"] = [
-                    self._q_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset)
+                    self._q_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset, flow_x)
                     for ii in q_indxs
                 ]
                 # clbit coordinate
                 self._data[node]["c_xy"] = [
-                    self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset)
+                    self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset, flow_x)
                     for ii in c_indxs
                 ]
                 q_xy = []
-                if is_flow:
+                if flow_node is not None:
+                    print("PARENT", parent._data[flow_node]["q_xy"])
+                    print(node.op, self._data[node]["q_xy"])
                     for xy in self._data[node]["q_xy"]:
                         q_xy.append(
                             (
-                                xy[0] + parent._data[flow_node]["q_xy"][0][0] - 0.25,
+                                xy[0] + parent._data[flow_node]["q_xy"][0][0] + WID,
                                 xy[1] + parent._data[flow_node]["q_xy"][0][1],
                             )
                         )
                     self._data[node]["q_xy"] = q_xy
+                    print(node.op, q_xy)
 
                 # update index based on the value from plotting
                 anc_x_index = self._q_anchors[q_indxs[0]].get_x_index()
@@ -885,12 +891,13 @@ class MatplotlibDrawer:
                 print('flow_nodes of nodes', self._flow_nodes)
                 print(node)
                 if isinstance(op, ControlFlowOp):
-                    self._flow_nodes[node]._get_coords(is_flow=True, parent=self, flow_node=node)
+                    self._flow_nodes[node]._get_coords(parent=self, flow_node=node)
 
                 # add conditional
                 if getattr(op, "condition", None):
+                    flow_x = isinstance(op, ControlFlowOp)
                     cond_xy = [
-                        self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset)
+                        self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset, flow_x)
                         for ii in self._clbits_dict
                     ]
                     if self._clbits_dict:
@@ -1032,10 +1039,10 @@ class MatplotlibDrawer:
         qubit_b = list(min(self._data[node]["q_xy"], key=lambda xy: xy[1]))
         clbit_b = list(min(xy_plot, key=lambda xy: xy[1]))
         print(qubit_b, clbit_b)
-        if isinstance(node.op, ControlFlowOp):
-            qubit_b[1] -= 0.4
-            qubit_b[0] -= 1.0
-            clbit_b[0] -= 1.0
+        # if isinstance(node.op, ControlFlowOp):
+        #     qubit_b[1] -= 0.4
+        #     qubit_b[0] -= 1.0
+        #     clbit_b[0] -= 1.0
         print(node.op)
 
         # display the label at the bottom of the lowest conditional and draw the double line
@@ -1044,7 +1051,7 @@ class MatplotlibDrawer:
             xpos += 0.3
         self._ax.text(
             xpos,
-            ypos - 0.3 * HIG,
+            ypos,#- 0.3 * HIG,
             label,
             ha="center",
             va="top",
@@ -1305,29 +1312,34 @@ class MatplotlibDrawer:
         if xy is None:
             xy = self._data[node]["q_xy"]
 
-        xpos = min(x[0] for x in xy) - 0.33
+        xpos = min(x[0] for x in xy)
         ypos = min(y[1] for y in xy) - 0.1
         ypos_max = max(y[1] for y in xy)
-        wid = max(self._data[node]["width"] - .16, WID)
-        print("\nWIDTH *******", self._data[node]["width"], WID)
+        wid = max(self._data[node]["width"] + 0.2, WID)
+        print("\nWIDTH *******", self._data[node]["width"], WID, xy)
 
         qubit_span = abs(ypos) - abs(ypos_max) + 1
-        height = HIG + (qubit_span - 1) + 0.08
-        box = self._patches_mod.Rectangle(
-            xy=(xpos - 0.5 * wid, ypos - 0.5 * HIG),
+        height = HIG + (qubit_span - 1) + 0.04
+        print("height qubit_span ypos ypos_max", HIG, height, qubit_span, ypos, ypos_max)
+        box = self._patches_mod.FancyBboxPatch(
+            xy=(xpos, ypos - 0.5 * HIG),
             width=wid,
             height=height,
+            boxstyle="round, pad=0.1",
             fc="none",
-            ec=self._style["lc"],
-            linewidth=self._lwidth15,
-            zorder=PORDER_GATE,
+            ec=self._style["dispcol"]["cy"][0],#self._style["lc"],
+            linewidth=3.0,
+            #color=self._style["dispcol"]["cy"][0],
+            zorder=1000.0, #PORDER_GATE,
         )
         self._ax.add_patch(box)
+        self._ax.spines['top'].set_visible(False)
+
 
         self._ax.text(
-            xpos + 0.1 - 0.5 * wid,
+            xpos + 0.0,# - 0.5 * wid,
             ypos_max + 0.2,
-            "If",
+            "IF",
             ha="left",
             va="center",
             fontsize=self._fs,
@@ -1602,17 +1614,26 @@ class Anchor:
         self._y_index = y_index
         self._x_index = 0
 
-    def plot_coord(self, x_index, gate_width, x_offset):
+    def plot_coord(self, x_index, gate_width, x_offset, flow_x=False):
         """Get the coord positions for an index"""
+
+        print("inside plot_cooord", flow_x, x_index, gate_width)
+        #flow_x = False
         h_pos = x_index % self._fold + 1
         # check folding
         if self._fold > 0:
             if h_pos + (gate_width - 1) > self._fold:
                 x_index += self._fold - (h_pos - 1)
-            x_pos = x_index % self._fold + 0.5 * gate_width + 0.04
+            x_pos = x_index % self._fold + 0.04
+            if not flow_x:
+                x_pos += 0.5 * gate_width
+                print("\n1 NOT FLOW X", x_pos)
             y_pos = self._y_index - (x_index // self._fold) * (self._num_wires + 1)
         else:
-            x_pos = x_index + 0.5 * gate_width + 0.04
+            x_pos = x_index + 0.04
+            if not flow_x:
+                xpos += 0.5 * gate_width
+                print("\nNOT FLOW X", x_pos)
             y_pos = self._y_index
 
         # could have been updated, so need to store
