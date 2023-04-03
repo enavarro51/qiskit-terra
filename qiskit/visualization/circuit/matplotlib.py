@@ -20,6 +20,7 @@ from warnings import warn
 import copy
 
 import numpy as np
+import math
 
 from qiskit.circuit import ControlledGate, Qubit, Clbit, ClassicalRegister, ControlFlowOp
 from qiskit.circuit import Measure, QuantumCircuit, QuantumRegister
@@ -201,6 +202,7 @@ class MatplotlibDrawer:
         self._calibrations = self._circuit.calibrations
 
         for node in itertools.chain.from_iterable(self._nodes):
+            print(node.cargs, node.op)
             if node.cargs and node.op.name != "measure":
                 if cregbundle:
                     warn(
@@ -228,7 +230,6 @@ class MatplotlibDrawer:
         self._layer_widths = []
         self._flow_nodes = {}
         self._n_lines = 0
-        self._flow_bit_map = {}
 
         # _char_list for finding text_width of names, labels, and params
         self._char_list = {
@@ -422,7 +423,6 @@ class MatplotlibDrawer:
 
     def _get_layer_widths(self):
         """Compute the layer_widths for the layers"""
-        print(self._nodes)
         for layer in self._nodes:
             widest_box = WID
             for node in layer:
@@ -503,22 +503,12 @@ class MatplotlibDrawer:
                             qubits, clbits, nodes, circuit=node.op.params[0]
                         )
                         self._flow_nodes[node] = flow_node
-                        print("\nin layer width", self._flow_nodes)
-                        print(flow_node)
-                        print(node)
                         flow_node._wire_map = self._wire_map
                         flow_node._get_layer_widths()
                         flow_node._set_bit_reg_info()
 
-                        flow_node._flow_bit_map = {
-                            fbit: self._qubits[i] for i, fbit in enumerate(flow_node._qubits)
-                        }
-                        flow_node._flow_bit_map.update(
-                            {fbit: self._clbits[i] for i, fbit in enumerate(flow_node._clbits)}
-                        )
                         raw_gate_width = 0.0
                         for width in flow_node._layer_widths:
-                            print("\nFlow node widths", width)
                             raw_gate_width += width
                         if raw_gate_width == 0.0:
                             raw_gate_width = 1.0
@@ -628,6 +618,7 @@ class MatplotlibDrawer:
             layer_width = self._layer_widths[i]
             anc_x_index = prev_x_index + 1
             for node in layer:
+                self._data[node]["inside_flow"] = False
                 # get qubit index
                 q_indxs = []
                 for qarg in node.qargs:
@@ -643,8 +634,6 @@ class MatplotlibDrawer:
                         else:
                             c_indxs.append(self._wire_map[carg])
                 flow_x = isinstance(node.op, ControlFlowOp)
-                print()
-                print(flow_x, node.op)
 
                 # qubit coordinate
                 self._data[node]["q_xy"] = [
@@ -656,10 +645,8 @@ class MatplotlibDrawer:
                     self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset, flow_x)
                     for ii in c_indxs
                 ]
-                q_xy = []
                 if flow_node is not None:
-                    print("PARENT", parent._data[flow_node]["q_xy"])
-                    print(node.op, self._data[node]["q_xy"])
+                    q_xy = []
                     for xy in self._data[node]["q_xy"]:
                         q_xy.append(
                             (
@@ -668,7 +655,7 @@ class MatplotlibDrawer:
                             )
                         )
                     self._data[node]["q_xy"] = q_xy
-                    print(node.op, q_xy)
+                    self._data[node]["inside_flow"] = True
 
                 # update index based on the value from plotting
                 anc_x_index = self._q_anchors[q_indxs[0]].get_x_index()
@@ -859,18 +846,6 @@ class MatplotlibDrawer:
         # Add all the nodes from circuits inside flow ops to the list
         # of nodes in the main circuit
         for flow_node in self._flow_nodes.values():
-            for i, fnode_layer in enumerate(flow_node._nodes):
-                for j, fnode in enumerate(fnode_layer):
-                    if fnode.op.condition:
-                        fnode_cpy = copy.deepcopy(fnode)
-                        flow_node._nodes[i][j] = fnode_cpy
-                        flow_node._data[fnode_cpy] = flow_node._data[fnode]
-                        fnode_cpy.op.condition = (
-                            flow_node._flow_bit_map[fnode_cpy.op.condition[0]],
-                            fnode_cpy.op.condition[1],
-                        )
-            print("\nin draw ops", flow_node._nodes)
-            print("FLOW NODE", flow_node)
             self._nodes += flow_node._nodes
             self._layer_widths += flow_node._layer_widths
             self._data.update(flow_node._data)
@@ -888,8 +863,7 @@ class MatplotlibDrawer:
 
                 if verbose:
                     print(op)
-                print('flow_nodes of nodes', self._flow_nodes)
-                print(node)
+
                 if isinstance(op, ControlFlowOp):
                     self._flow_nodes[node]._get_coords(parent=self, flow_node=node)
 
@@ -900,6 +874,9 @@ class MatplotlibDrawer:
                         self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset, flow_x)
                         for ii in self._clbits_dict
                     ]
+                    if self._data[node]["inside_flow"]:
+                        for i, xy in enumerate(cond_xy):
+                            cond_xy[i] = (self._data[node]["q_xy"][0][0], cond_xy[i][1])
                     if self._clbits_dict:
                         anc_x_index = max(
                             anc_x_index, next(iter(self._c_anchors.items()))[1].get_x_index()
@@ -990,6 +967,7 @@ class MatplotlibDrawer:
 
     def _condition(self, node, cond_xy):
         """Add a conditional to a gate"""
+
         label, val_bits = get_condition_label_val(
             node.op.condition, self._circuit, self._cregbundle
         )
@@ -1035,15 +1013,11 @@ class MatplotlibDrawer:
             )
             self._ax.add_patch(box)
             xy_plot.append(xy)
-        print("\ndata", self._data[node])
+
         qubit_b = list(min(self._data[node]["q_xy"], key=lambda xy: xy[1]))
         clbit_b = list(min(xy_plot, key=lambda xy: xy[1]))
-        print(qubit_b, clbit_b)
-        # if isinstance(node.op, ControlFlowOp):
-        #     qubit_b[1] -= 0.4
-        #     qubit_b[0] -= 1.0
-        #     clbit_b[0] -= 1.0
-        print(node.op)
+        if isinstance(node.op, ControlFlowOp):
+             qubit_b[1] -= .5 * HIG + 0.19
 
         # display the label at the bottom of the lowest conditional and draw the double line
         xpos, ypos = clbit_b
@@ -1051,7 +1025,7 @@ class MatplotlibDrawer:
             xpos += 0.3
         self._ax.text(
             xpos,
-            ypos,#- 0.3 * HIG,
+            ypos - 0.3 * HIG,
             label,
             ha="center",
             va="top",
@@ -1312,15 +1286,13 @@ class MatplotlibDrawer:
         if xy is None:
             xy = self._data[node]["q_xy"]
 
-        xpos = min(x[0] for x in xy)
+        xpos = min(x[0] for x in xy) - 0.1
         ypos = min(y[1] for y in xy) - 0.1
         ypos_max = max(y[1] for y in xy)
-        wid = max(self._data[node]["width"] + 0.2, WID)
-        print("\nWIDTH *******", self._data[node]["width"], WID, xy)
+        wid = max(self._data[node]["width"] + 0.35, WID)
 
         qubit_span = abs(ypos) - abs(ypos_max) + 1
         height = HIG + (qubit_span - 1) + 0.04
-        print("height qubit_span ypos ypos_max", HIG, height, qubit_span, ypos, ypos_max)
         box = self._patches_mod.FancyBboxPatch(
             xy=(xpos, ypos - 0.5 * HIG),
             width=wid,
@@ -1334,12 +1306,10 @@ class MatplotlibDrawer:
         )
         self._ax.add_patch(box)
         self._ax.spines['top'].set_visible(False)
-
-
         self._ax.text(
-            xpos + 0.0,# - 0.5 * wid,
+            xpos - 0.08,
             ypos_max + 0.2,
-            "IF",
+            " If",
             ha="left",
             va="center",
             fontsize=self._fs,
@@ -1617,23 +1587,24 @@ class Anchor:
     def plot_coord(self, x_index, gate_width, x_offset, flow_x=False):
         """Get the coord positions for an index"""
 
-        print("inside plot_cooord", flow_x, x_index, gate_width)
         #flow_x = False
         h_pos = x_index % self._fold + 1
         # check folding
         if self._fold > 0:
             if h_pos + (gate_width - 1) > self._fold:
                 x_index += self._fold - (h_pos - 1)
-            x_pos = x_index % self._fold + 0.04
+            x_pos = x_index % self._fold# + 0.04
             if not flow_x:
                 x_pos += 0.5 * gate_width
-                print("\n1 NOT FLOW X", x_pos)
+            else:
+                x_pos += 0.25
             y_pos = self._y_index - (x_index // self._fold) * (self._num_wires + 1)
         else:
-            x_pos = x_index + 0.04
+            x_pos = x_index# + 0.04
             if not flow_x:
                 xpos += 0.5 * gate_width
-                print("\nNOT FLOW X", x_pos)
+            else:
+                x_pos += 0.25
             y_pos = self._y_index
 
         # could have been updated, so need to store
