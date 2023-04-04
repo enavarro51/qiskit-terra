@@ -17,10 +17,8 @@
 import itertools
 import re
 from warnings import warn
-import copy
 
 import numpy as np
-import math
 
 from qiskit.circuit import ControlledGate, Qubit, Clbit, ClassicalRegister, ControlFlowOp
 from qiskit.circuit import Measure, QuantumCircuit, QuantumRegister
@@ -202,7 +200,6 @@ class MatplotlibDrawer:
         self._calibrations = self._circuit.calibrations
 
         for node in itertools.chain.from_iterable(self._nodes):
-            print(node.cargs, node.op)
             if node.cargs and node.op.name != "measure":
                 if cregbundle:
                     warn(
@@ -871,7 +868,9 @@ class MatplotlibDrawer:
                 if getattr(op, "condition", None):
                     flow_x = isinstance(op, ControlFlowOp)
                     cond_xy = [
-                        self._c_anchors[ii].plot_coord(anc_x_index, layer_width, self._x_offset, flow_x)
+                        self._c_anchors[ii].plot_coord(
+                            anc_x_index, layer_width, self._x_offset, flow_x
+                        )
                         for ii in self._clbits_dict
                     ]
                     if self._data[node]["inside_flow"]:
@@ -1014,10 +1013,10 @@ class MatplotlibDrawer:
             self._ax.add_patch(box)
             xy_plot.append(xy)
 
-        qubit_b = list(min(self._data[node]["q_xy"], key=lambda xy: xy[1]))
-        clbit_b = list(min(xy_plot, key=lambda xy: xy[1]))
+        qubit_b = min(self._data[node]["q_xy"], key=lambda xy: xy[1])
+        clbit_b = min(xy_plot, key=lambda xy: xy[1])
         if isinstance(node.op, ControlFlowOp):
-             qubit_b[1] -= .5 * HIG + 0.19
+            qubit_b = (qubit_b[0], qubit_b[1] - (0.5 * HIG + 0.19))
 
         # display the label at the bottom of the lowest conditional and draw the double line
         xpos, ypos = clbit_b
@@ -1299,13 +1298,12 @@ class MatplotlibDrawer:
             height=height,
             boxstyle="round, pad=0.1",
             fc="none",
-            ec=self._style["dispcol"]["cy"][0],#self._style["lc"],
+            ec=self._style["dispcol"]["cy"][0],
             linewidth=3.0,
-            #color=self._style["dispcol"]["cy"][0],
-            zorder=1000.0, #PORDER_GATE,
+            zorder=1000.0,  # PORDER_GATE,
         )
         self._ax.add_patch(box)
-        self._ax.spines['top'].set_visible(False)
+        self._ax.spines["top"].set_visible(False)
         self._ax.text(
             xpos - 0.08,
             ypos_max + 0.2,
@@ -1317,7 +1315,6 @@ class MatplotlibDrawer:
             clip_on=True,
             zorder=10,
         )
-
 
     def _control_gate(self, node):
         """Draw a controlled gate"""
@@ -1587,20 +1584,19 @@ class Anchor:
     def plot_coord(self, x_index, gate_width, x_offset, flow_x=False):
         """Get the coord positions for an index"""
 
-        #flow_x = False
         h_pos = x_index % self._fold + 1
         # check folding
         if self._fold > 0:
             if h_pos + (gate_width - 1) > self._fold:
                 x_index += self._fold - (h_pos - 1)
-            x_pos = x_index % self._fold# + 0.04
+            x_pos = x_index % self._fold + 0.04
             if not flow_x:
                 x_pos += 0.5 * gate_width
             else:
                 x_pos += 0.25
             y_pos = self._y_index - (x_index // self._fold) * (self._num_wires + 1)
         else:
-            x_pos = x_index# + 0.04
+            x_pos = x_index + 0.04
             if not flow_x:
                 xpos += 0.5 * gate_width
             else:
