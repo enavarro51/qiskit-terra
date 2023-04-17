@@ -344,6 +344,7 @@ class MatplotlibDrawer:
 
         # get layer widths
         layer_widths = self._get_layer_widths(node_data, wire_map)
+        print("\nTOP LAYERS", layer_widths)
 
         # load the _qubit_dict and _clbit_dict with register info
         self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict)
@@ -514,13 +515,16 @@ class MatplotlibDrawer:
 
                 # Check if an IfElseOp - node_data load for these gates is done here
                 elif isinstance(node.op, IfElseOp):
+                    if layer_widths[node] >= 1:
+                        continue
+                    layer_widths[node] = 0
                     self._flow_drawers[node] = []
                     node_data[node]["width"] = []
                     gate_width = 0.0
 
                     # params[0] holds circuit for if, params[1] holds circuit for else
                     for i, circuit in enumerate(node.op.params):
-                        raw_gate_width = 0.0
+                        raw_gate_width = -1.0
                         if circuit is None:  # No else
                             self._flow_drawers[node].append(None)
                             node_data[node]["width"].append(0.0)
@@ -531,11 +535,14 @@ class MatplotlibDrawer:
 
                         flow_drawer._flow_node = node
                         flow_widths = flow_drawer._get_layer_widths(node_data, wire_map)
+                        print("\nflow_widths", flow_widths)
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
 
                         for width in flow_widths.values():
+                            print("width", width)
                             raw_gate_width += width
+                            print("\nraw", raw_gate_width)
                         if raw_gate_width == 0.0:
                             raw_gate_width = 1.0
                         # Need extra incr of 1.0 for else box
@@ -552,13 +559,15 @@ class MatplotlibDrawer:
                         gate_width += 0.21
 
                 box_width = max(gate_width, ctrl_width, param_width, WID)
+                print("\nop Box width", node.op)
+                print(box_width)
                 if box_width > widest_box:
                     widest_box = box_width
                 if not isinstance(node.op, ControlFlowOp):
                     node_data[node]["width"] = max(raw_gate_width, raw_param_width)
                 for node in layer:
                     layer_widths[node] = int(widest_box) + 1
-
+        print("\nLAYERS", layer_widths)
         return layer_widths
 
     def _set_bit_reg_info(self, wire_map, qubits_dict, clbits_dict):
@@ -647,8 +656,6 @@ class MatplotlibDrawer:
         """Load all the coordinate info needed to place the gates on the drawing.
         flow_node is node id for the parent of a gate inside a ControlFlowOp circuit.
         """
-
-        # get all the necessary coordinates for placing gates on the wires
         prev_x_index = -1
         for i, layer in enumerate(self._nodes):
             anc_x_index = prev_x_index + 1
@@ -700,6 +707,8 @@ class MatplotlibDrawer:
                 if flow_node is not None:
                     q_xy = []
                     x_incr = 0.2 if is_if is True else 0.5
+                    print(node.op)
+                    print(flow_node.op)
                     for xy in node_data[node]["q_xy"]:
                         q_xy.append(
                             (
