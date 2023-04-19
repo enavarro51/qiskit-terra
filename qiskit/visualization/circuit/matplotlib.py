@@ -343,9 +343,8 @@ class MatplotlibDrawer:
         clbits_dict = {}
 
         # get layer widths
-        if_nest_depth = 0
-        layer_widths = self._get_layer_widths(node_data, wire_map, if_nest_depth)
-        print("\nTOP LAYERS", layer_widths)
+        nested_if_depth = [0, 0]
+        layer_widths = self._get_layer_widths(node_data, wire_map, nested_if_depth)
 
         # load the _qubit_dict and _clbit_dict with register info
         self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict)
@@ -432,6 +431,9 @@ class MatplotlibDrawer:
             return self._figure
 
     def _load_flow_wire_maps(self, wire_map):
+        """Load the qubits and clbits from ControlFlowOps into
+        the wire_map if not already there.
+        """
         for flow_drawer in self._flow_drawers.values():
             for i in range(0, 2):
                 if flow_drawer[i] is None:
@@ -444,22 +446,22 @@ class MatplotlibDrawer:
                 wire_map.update(inner_wire_map)
                 flow_drawer[i]._load_flow_wire_maps(wire_map)
 
-    def _get_layer_widths(self, node_data, wire_map, if_nest_depth=0):
+    def _get_layer_widths(self, node_data, wire_map, nested_if_depth=[]):
         """Compute the layer_widths for the layers"""
+
         layer_widths = {}
-        print("NODES", self._nodes)
         for i, layer in enumerate(self._nodes):
-            print("Layer num", i)
             widest_box = WID
             first_node = True
+            save_layer = {}
             for node in layer:
                 if first_node:
                     first_node = False
-                    save_layer = i
-                    layer_widths[node] = (1, i)
+                    save_layer[node] = i
                 else:
-                    layer_widths[node] = (1, -1)
-                    save_layer = -1
+                    save_layer[node] = -1
+                layer_widths[node] = (1, save_layer[node])
+
                 op = node.op
                 node_data[node] = {}
                 node_data[node]["width"] = WID
@@ -486,7 +488,6 @@ class MatplotlibDrawer:
                     and (not hasattr(op, "params") or len(op.params) == 0)
                     and ctrl_text is None
                 ):
-                    print("\ncontinue", node.op)
                     continue
 
                 if isinstance(op, SwapGate) or isinstance(base_type, SwapGate):
@@ -531,7 +532,7 @@ class MatplotlibDrawer:
                     gate_width = 0.0
 
                     # params[0] holds circuit for if, params[1] holds circuit for else
-                    for i, circuit in enumerate(node.op.params):
+                    for k, circuit in enumerate(node.op.params):
                         raw_gate_width = 0.0
                         if circuit is None:  # No else
                             self._flow_drawers[node].append(None)
@@ -542,24 +543,21 @@ class MatplotlibDrawer:
                         flow_drawer = MatplotlibDrawer(qubits, clbits, nodes, circuit=circuit)
 
                         flow_drawer._flow_node = node
-                        flow_widths = flow_drawer._get_layer_widths(node_data, wire_map, if_nest_depth)
-                        print("\nflow_widths", flow_widths)
+                        flow_widths = flow_drawer._get_layer_widths(node_data, wire_map, nested_if_depth)
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
-                        if_nest_depth += 1
+                        nested_if_depth[k] += 1
 
-                        for width, layer in flow_widths.values():
-                            print("width", width, layer)
-                            if layer != -1:
+                        for width, layer_num in flow_widths.values():
+                            if layer_num != -1:
                                 raw_gate_width += width
-                                print("\nraw", raw_gate_width)
                         if raw_gate_width <= 0.0:
-                            raw_gate_width = 1.0
+                             raw_gate_width = 1.0
                         # Need extra incr of 1.0 for else box
-                        if if_nest_depth < 3:
-                            gate_width += raw_gate_width + (1.0 if i == 1 else 0.0)
+                        if nested_if_depth[k] < 2:
+                            gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
                         else:
-                            gate_width = raw_gate_width + (1.0 if i == 1 else 0.0)
+                            gate_width = raw_gate_width + (1.0 if k == 1 else 0.0)
                         node_data[node]["width"].append(raw_gate_width)
                     self._load_flow_wire_maps(wire_map)
 
@@ -570,18 +568,15 @@ class MatplotlibDrawer:
                     # add .21 for the qubit numbers on the left of the multibit gates
                     if len(node.qargs) - num_ctrl_qubits > 1:
                         gate_width += 0.21
-                    print("\nin final else", node.op, node.op.label)
-                    print(raw_gate_width, gate_width)
 
                 box_width = max(gate_width, ctrl_width, param_width, WID)
-                print("\nop Box width", node.op)
-                print(box_width)
                 if box_width > widest_box:
                     widest_box = box_width
-                if not isinstance(node.op, ControlFlowOp):
+                if not isinstance(node.op, IfElseOp):
                     node_data[node]["width"] = max(raw_gate_width, raw_param_width)
-                layer_widths[node] = (int(widest_box) + 1, save_layer)
-        print("\nLAYERS", layer_widths)
+            for node in layer:
+                layer_widths[node] = (int(widest_box) + 1, save_layer[node])
+
         return layer_widths
 
     def _set_bit_reg_info(self, wire_map, qubits_dict, clbits_dict):
@@ -721,8 +716,6 @@ class MatplotlibDrawer:
                 if flow_node is not None:
                     q_xy = []
                     x_incr = 0.2 if is_if is True else 0.5
-                    print(node.op)
-                    print(flow_node.op)
                     for xy in node_data[node]["q_xy"]:
                         q_xy.append(
                             (
@@ -923,7 +916,6 @@ class MatplotlibDrawer:
                 if flow_drawer[i] is None:
                     continue
                 nodes += flow_drawer[i]._nodes
-                layer_widths.update(flow_drawer[i]._get_layer_widths(node_data, wire_map))
                 flow_drawer[i]._get_coords(
                     node_data,
                     wire_map,
