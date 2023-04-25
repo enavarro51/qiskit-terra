@@ -350,19 +350,19 @@ class MatplotlibDrawer:
         self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict)
 
         # load the coordinates for each gate and compute number of folds
-        max_anc = self._get_coords(node_data, wire_map, layer_widths, qubits_dict, clbits_dict)
-        num_folds = max(0, max_anc - 1) // self._fold if self._fold > 0 else 0
+        max_x = self._get_coords(node_data, wire_map, layer_widths, qubits_dict, clbits_dict)
+        num_folds = max(0, max_x - 1) // self._fold if self._fold > 0 else 0
 
         # The window size limits are computed, followed by one of the four possible ways
         # of scaling the drawing.
 
         # compute the window size
-        if max_anc > self._fold > 0:
+        if max_x > self._fold > 0:
             xmax = self._fold + self._x_offset + 0.1
             ymax = (num_folds + 1) * (self._n_lines + 1) - 1
         else:
             x_incr = 0.4 if not self._nodes else 0.9
-            xmax = max_anc + 1 + self._x_offset - x_incr
+            xmax = max_x + 1 + self._x_offset - x_incr
             ymax = self._n_lines
 
         xl = -self._style["margin"][0]
@@ -414,7 +414,8 @@ class MatplotlibDrawer:
             self._plt_mod.text(
                 xl, yt, "Global Phase: %s" % pi_check(self._global_phase, output="mpl")
             )
-        self._draw_regs_wires(num_folds, xmax, max_anc, qubits_dict, clbits_dict)
+
+        self._draw_regs_wires(num_folds, xmax, max_x, qubits_dict, clbits_dict)
         self._draw_ops(
             self._nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, verbose
         )
@@ -591,10 +592,6 @@ class MatplotlibDrawer:
         pos = y_off = -len(self._qubits) + 1
         for ii, wire in enumerate(wire_map):
 
-            # Wires are added from ControlFlowOps, so need to be skipped here
-            if wire not in (self._qubits + self._clbits):
-                continue
-
             # if it's a creg, register is the key and just load the index
             if isinstance(wire, ClassicalRegister):
                 register = wire
@@ -649,7 +646,6 @@ class MatplotlibDrawer:
                     "wire_label": wire_label,
                     "register": register,
                 }
-
         self._x_offset = -1.2 + longest_wire_label_width
 
     def _get_coords(
@@ -667,7 +663,7 @@ class MatplotlibDrawer:
         """
         prev_x_index = -1
         for i, layer in enumerate(self._nodes):
-            anc_x_index = prev_x_index + 1
+            curr_x_index = prev_x_index + 1
             l_width = []
             for node in layer:
                 node_data[node]["inside_flow"] = False
@@ -702,7 +698,7 @@ class MatplotlibDrawer:
                 # qubit coordinates
                 node_data[node]["q_xy"] = [
                     self._plot_coord(
-                        anc_x_index, qubits_dict[ii]["y"], layer_widths[node][0], offset, flow_x
+                        curr_x_index, qubits_dict[ii]["y"], layer_widths[node][0], self._x_offset
                     )
                     for ii in q_indxs
                 ]
@@ -727,7 +723,7 @@ class MatplotlibDrawer:
                     node_data[node]["inside_flow"] = True
 
                 # update index based on the value from plotting
-                anc_x_index = self._x_index
+                curr_x_index = self._x_index
                 l_width.append(layer_widths[node][0])
 
             # adjust the column if there have been barriers encountered, but not plotted
@@ -737,7 +733,7 @@ class MatplotlibDrawer:
                 barrier_offset = (
                     -1 if all(getattr(nd.op, "_directive", False) for nd in layer) else 0
                 )
-            prev_x_index = anc_x_index + max(l_width) + barrier_offset - 1
+            prev_x_index = curr_x_index + max(l_width) + barrier_offset - 1
 
         return prev_x_index + 1
 
@@ -786,7 +782,7 @@ class MatplotlibDrawer:
             sum_text *= self._subfont_factor
         return sum_text
 
-    def _draw_regs_wires(self, num_folds, xmax, max_anc, qubits_dict, clbits_dict):
+    def _draw_regs_wires(self, num_folds, xmax, max_x, qubits_dict, clbits_dict):
         """Draw the register names and numbers, wires, and vertical lines at the ends"""
 
         for fold_num in range(num_folds + 1):
@@ -888,7 +884,7 @@ class MatplotlibDrawer:
 
         # draw index number
         if self._style["index"]:
-            for layer_num in range(max_anc):
+            for layer_num in range(max_x):
                 if self._fold > 0:
                     x_coord = layer_num % self._fold + self._x_offset + 0.53
                     y_coord = -(layer_num // self._fold) * (self._n_lines + 1) + 0.65
@@ -907,28 +903,6 @@ class MatplotlibDrawer:
                     zorder=PORDER_TEXT,
                 )
 
-    def _add_nodes_and_coords(
-        self, nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict
-    ):
-        """Add the nodes from ControlFlowOps and their coordinates to the main circuit"""
-        for flow_drawer in self._flow_drawers.values():
-            for i in range(0, 2):
-                if flow_drawer[i] is None:
-                    continue
-                nodes += flow_drawer[i]._nodes
-                flow_drawer[i]._get_coords(
-                    node_data,
-                    wire_map,
-                    layer_widths,
-                    qubits_dict,
-                    clbits_dict,
-                    flow_node=flow_drawer[i]._flow_node,
-                    is_if=True if i == 0 else False,
-                )
-                flow_drawer[i]._add_nodes_and_coords(
-                    nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict
-                )
-
     def _draw_ops(
         self, nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, verbose=False
     ):
@@ -940,7 +914,7 @@ class MatplotlibDrawer:
         prev_x_index = -1
         for i, layer in enumerate(nodes):
             l_width = []
-            anc_x_index = prev_x_index + 1
+            curr_x_index = prev_x_index + 1
 
             # draw the gates in this layer
             for node in layer:
@@ -956,7 +930,7 @@ class MatplotlibDrawer:
                     flow_x = isinstance(op, IfElseOp)
                     cond_xy = [
                         self._plot_coord(
-                            anc_x_index,
+                            curr_x_index,
                             clbits_dict[ii]["y"],
                             layer_widths[node][0],
                             self._x_offset,
@@ -968,7 +942,7 @@ class MatplotlibDrawer:
                         for i, xy in enumerate(cond_xy):
                             cond_xy[i] = (node_data[node]["q_xy"][0][0], cond_xy[i][1])
                     if clbits_dict:
-                        anc_x_index = max(anc_x_index, self._x_index)
+                        curr_x_index = max(anc_x_index, self._x_index)
                     self._condition(node, node_data, wire_map, cond_xy)
 
                 # draw measure
@@ -1006,7 +980,7 @@ class MatplotlibDrawer:
                     -1 if all(getattr(nd.op, "_directive", False) for nd in layer) else 0
                 )
 
-            prev_x_index = anc_x_index + max(l_width) + barrier_offset - 1
+            prev_x_index = curr_x_index + max(l_width) + barrier_offset - 1
 
     def _get_colors(self, node, node_data):
         """Get all the colors needed for drawing the circuit"""
@@ -1283,12 +1257,12 @@ class MatplotlibDrawer:
 
         # Swap gate
         if isinstance(op, SwapGate):
-            self._swap(xy, node, node_data[node]["lc"])
+            self._swap(xy, node, node_data, node_data[node]["lc"])
             return
 
         # RZZ Gate
         elif isinstance(op, RZZGate):
-            self._symmetric_gate(node, RZZGate)
+            self._symmetric_gate(node, node_data, RZZGate)
             return
 
         c_xy = node_data[node]["c_xy"]
@@ -1451,7 +1425,7 @@ class MatplotlibDrawer:
         self._line(qubit_b, qubit_t, lc=node_data[node]["lc"])
 
         if isinstance(op, RZZGate) or isinstance(base_type, (U1Gate, PhaseGate, ZGate, RZZGate)):
-            self._symmetric_gate(node, base_type)
+            self._symmetric_gate(node, node_data, base_type)
 
         elif num_qargs == 1 and isinstance(base_type, XGate):
             tgt_color = self._style["dispcol"]["target"]
@@ -1459,13 +1433,13 @@ class MatplotlibDrawer:
             self._x_tgt_qubit(xy[num_ctrl_qubits], ec=node_data[node]["ec"], ac=tgt)
 
         elif num_qargs == 1:
-            self._gate(node, xy[num_ctrl_qubits:][0])
+            self._gate(node, node_data, xy[num_ctrl_qubits:][0])
 
         elif isinstance(base_type, SwapGate):
-            self._swap(xy[num_ctrl_qubits:], node, node_data[node]["lc"])
+            self._swap(xy[num_ctrl_qubits:], node, node_data, node_data[node]["lc"])
 
         else:
-            self._multiqubit_gate(node, xy[num_ctrl_qubits:])
+            self._multiqubit_gate(node, node_data, xy[num_ctrl_qubits:])
 
     def _set_ctrl_bits(
         self, ctrl_state, num_ctrl_qubits, qbit, ec=None, tc=None, text="", qargs=None
@@ -1587,7 +1561,7 @@ class MatplotlibDrawer:
                 self._ctrl_qubit(xy[num_ctrl_qubits + 1], fc=ec, ec=ec, tc=tc)
 
             self._sidetext(
-                node, qubit_b, tc=tc, text=f"{gate_text} ({node_data[node]['param_text']})"
+                node, node_data, qubit_b, tc=tc, text=f"{gate_text} ({node_data[node]['param_text']})"
             )
             self._line(qubit_b, qubit_t, lc=lc)
 
