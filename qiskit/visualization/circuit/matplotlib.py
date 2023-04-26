@@ -446,6 +446,7 @@ class MatplotlibDrawer:
                 }
                 wire_map.update(inner_wire_map)
                 flow_drawer[i]._load_flow_wire_maps(wire_map)
+        print(wire_map)
 
     def _get_layer_widths(self, node_data, wire_map, nested_if_depth=[]):
         """Compute the layer_widths for the layers"""
@@ -547,6 +548,7 @@ class MatplotlibDrawer:
                         flow_widths = flow_drawer._get_layer_widths(node_data, wire_map, nested_if_depth)
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
+                        print(k, nested_if_depth)
                         nested_if_depth[k] += 1
 
                         for width, layer_num in flow_widths.values():
@@ -705,7 +707,7 @@ class MatplotlibDrawer:
                 # clbit coordinates
                 node_data[node]["c_xy"] = [
                     self._plot_coord(
-                        anc_x_index, clbits_dict[ii]["y"], layer_widths[node][0], offset, flow_x
+                        curr_x_index, clbits_dict[ii]["y"], layer_widths[node][0], offset, flow_x
                     )
                     for ii in c_indxs
                 ]
@@ -903,6 +905,28 @@ class MatplotlibDrawer:
                     zorder=PORDER_TEXT,
                 )
 
+    def _add_nodes_and_coords(
+        self, nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict
+    ):
+        """Add the nodes from ControlFlowOps and their coordinates to the main circuit"""
+        for flow_drawer in self._flow_drawers.values():
+            for i in range(0, 2):
+                if flow_drawer[i] is None:
+                    continue
+                nodes += flow_drawer[i]._nodes
+                flow_drawer[i]._get_coords(
+                    node_data,
+                    wire_map,
+                    layer_widths,
+                    qubits_dict,
+                    clbits_dict,
+                    flow_node=flow_drawer[i]._flow_node,
+                    is_if=True if i == 0 else False,
+                )
+                flow_drawer[i]._add_nodes_and_coords(
+                    nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict
+                )
+
     def _draw_ops(
         self, nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, verbose=False
     ):
@@ -942,7 +966,7 @@ class MatplotlibDrawer:
                         for i, xy in enumerate(cond_xy):
                             cond_xy[i] = (node_data[node]["q_xy"][0][0], cond_xy[i][1])
                     if clbits_dict:
-                        curr_x_index = max(anc_x_index, self._x_index)
+                        curr_x_index = max(curr_x_index, self._x_index)
                     self._condition(node, node_data, wire_map, cond_xy)
 
                 # draw measure
