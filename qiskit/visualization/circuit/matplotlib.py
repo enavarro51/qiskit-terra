@@ -545,7 +545,9 @@ class MatplotlibDrawer:
                         flow_drawer = MatplotlibDrawer(qubits, clbits, nodes, circuit=circuit)
 
                         flow_drawer._flow_node = node
-                        flow_widths = flow_drawer._get_layer_widths(node_data, wire_map, nested_if_depth)
+                        flow_widths = flow_drawer._get_layer_widths(
+                            node_data, wire_map, nested_if_depth
+                        )
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
                         print(k, nested_if_depth)
@@ -555,7 +557,7 @@ class MatplotlibDrawer:
                             if layer_num != -1:
                                 raw_gate_width += width
                         if raw_gate_width <= 0.0:
-                             raw_gate_width = 1.0
+                            raw_gate_width = 1.0
                         # Need extra incr of 1.0 for else box
                         if nested_if_depth[k] < 2:
                             gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
@@ -1585,7 +1587,11 @@ class MatplotlibDrawer:
                 self._ctrl_qubit(xy[num_ctrl_qubits + 1], fc=ec, ec=ec, tc=tc)
 
             self._sidetext(
-                node, node_data, qubit_b, tc=tc, text=f"{gate_text} ({node_data[node]['param_text']})"
+                node,
+                node_data,
+                qubit_b,
+                tc=tc,
+                text=f"{gate_text} ({node_data[node]['param_text']})",
             )
             self._line(qubit_b, qubit_t, lc=lc)
 
