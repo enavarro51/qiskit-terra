@@ -21,8 +21,8 @@ from warnings import warn
 
 import numpy as np
 
-from qiskit.circuit import ControlledGate, Qubit, Clbit, ClassicalRegister, ControlFlowOp, IfElseOp
-from qiskit.circuit import Measure
+from qiskit.circuit import QuantumCircuit, Qubit, Clbit, ClassicalRegister
+from qiskit.circuit import ControlledGate, Measure, IfElseOp
 from qiskit.circuit.library.standard_gates import (
     SwapGate,
     RZZGate,
@@ -383,7 +383,6 @@ class MatplotlibDrawer:
                 }
                 wire_map.update(inner_wire_map)
                 flow_drawer[i]._load_flow_wire_maps(wire_map)
-        print(wire_map)
 
     def _get_layer_widths(self, node_data, wire_map, nested_if_depth=[]):
         """Compute the layer_widths for the layers"""
@@ -436,12 +435,12 @@ class MatplotlibDrawer:
                 # spacing adjustments between gates
                 ctrl_width = self._get_text_width(ctrl_text, fontsize=self._sfs) - 0.05
 
-                # get param_width, but 0 for gates with array params
+                # get param_width, but 0 for gates with array params or circuits in params
                 if (
-                    not isinstance(op, ControlFlowOp)
-                    and hasattr(op, "params")
+                    hasattr(op, "params")
                     and len(op.params) > 0
                     and not any(isinstance(param, np.ndarray) for param in op.params)
+                    and not any(isinstance(param, QuantumCircuit) for param in op.params)
                 ):
                     param_text = get_param_str(op, "mpl", ndigits=3)
                     if isinstance(op, Initialize):
@@ -470,14 +469,21 @@ class MatplotlibDrawer:
                     node_data[node]["width"] = []
                     gate_width = 0.0
 
+                    #print(node.op.params[0])
+                    #print(node.op.params[1])
                     # params[0] holds circuit for if, params[1] holds circuit for else
                     for k, circuit in enumerate(node.op.params):
+                        print(circuit)
                         raw_gate_width = 0.0
                         if circuit is None:  # No else
                             self._flow_drawers[node].append(None)
                             node_data[node]["width"].append(0.0)
                             break
 
+                        print(node.op)
+                        print(k, nested_if_depth)
+                        nested_if_depth[k] += 1
+                        print(k, nested_if_depth)
                         qubits, clbits, nodes = _get_layered_instructions(circuit)
                         flow_drawer = MatplotlibDrawer(qubits, clbits, nodes, circuit=circuit)
 
@@ -487,14 +493,12 @@ class MatplotlibDrawer:
                         )
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
-                        print(k, nested_if_depth)
-                        nested_if_depth[k] += 1
 
                         for width, layer_num in flow_widths.values():
                             if layer_num != -1:
                                 raw_gate_width += width
-                        if raw_gate_width <= 0.0:
-                            raw_gate_width = 1.0
+                        # if raw_gate_width <= 0.0:
+                        #     raw_gate_width = 1.0
                         # Need extra incr of 1.0 for else box
                         if nested_if_depth[k] < 2:
                             gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
@@ -532,6 +536,9 @@ class MatplotlibDrawer:
         idx = 0
         pos = y_off = -len(self._qubits) + 1
         for ii, wire in enumerate(wire_map):
+
+            if wire not in (self._qubits + self._clbits):
+                continue
 
             # if it's a creg, register is the key and just load the index
             if isinstance(wire, ClassicalRegister):
@@ -639,7 +646,7 @@ class MatplotlibDrawer:
                 # qubit coordinates
                 node_data[node]["q_xy"] = [
                     self._plot_coord(
-                        curr_x_index, qubits_dict[ii]["y"], layer_widths[node][0], self._x_offset
+                        curr_x_index, qubits_dict[ii]["y"], layer_widths[node][0], offset, flow_x
                     )
                     for ii in q_indxs
                 ]
