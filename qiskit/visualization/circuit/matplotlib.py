@@ -16,7 +16,6 @@
 
 import itertools
 import re
-import copy
 from warnings import warn
 
 import numpy as np
@@ -280,8 +279,7 @@ class MatplotlibDrawer:
         clbits_dict = {}
 
         # get layer widths
-        nested_if_depth = 0
-        layer_widths = self._get_layer_widths(node_data, wire_map, nested_if_depth)
+        layer_widths = self._get_layer_widths(node_data, wire_map)
 
         # load the _qubit_dict and _clbit_dict with register info
         self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict)
@@ -384,7 +382,7 @@ class MatplotlibDrawer:
                 wire_map.update(inner_wire_map)
                 flow_drawer[i]._load_flow_wire_maps(wire_map)
 
-    def _get_layer_widths(self, node_data, wire_map, nested_if_depth):
+    def _get_layer_widths(self, node_data, wire_map):
         """Compute the layer_widths for the layers"""
 
         layer_widths = {}
@@ -486,14 +484,12 @@ class MatplotlibDrawer:
                         flow_drawer = MatplotlibDrawer(qubits, clbits, nodes, circuit=circuit)
 
                         flow_drawer._flow_node = node
-                        flow_widths = flow_drawer._get_layer_widths(
-                            node_data, wire_map, nested_if_depth
-                        )
+                        flow_widths = flow_drawer._get_layer_widths(node_data, wire_map)
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
 
                         curr_layer = 0
-                        for fnode, (width, layer_num, save_layer, flow_parent) in flow_widths.items():
+                        for width, layer_num, save_layer, flow_parent in flow_widths.values():
                             if save_layer != -1 and flow_parent == flow_drawer._flow_node:
                                 curr_layer = layer_num
                                 raw_gate_width += width
@@ -1326,14 +1322,19 @@ class MatplotlibDrawer:
 
         qubit_span = abs(ypos) - abs(ypos_max)
         height = HIG + qubit_span
-        colors = [self._style["dispcol"]["h"][0], self._style["dispcol"]["u"][0], self._style["dispcol"]["x"][0]]
+        colors = [
+            self._style["dispcol"]["h"][0],
+            self._style["dispcol"]["u"][0],
+            self._style["dispcol"]["x"][0],
+            self._style["dispcol"]["measure"][0],
+        ]
         box = self._patches_mod.FancyBboxPatch(
             xy=(xpos, ypos - 0.5 * HIG),
             width=wid,
             height=height,
             boxstyle="round, pad=0.1",
             fc="none",
-            ec=colors[node_data[node]["if_depth"]],
+            ec=colors[node_data[node]["if_depth"] % 4],
             linewidth=3.0,
             zorder=PORDER_FLOW,
         )
