@@ -280,7 +280,7 @@ class MatplotlibDrawer:
         clbits_dict = {}
 
         # get layer widths
-        nested_if_depth = [0, 0]
+        nested_if_depth = 0
         layer_widths = self._get_layer_widths(node_data, wire_map, nested_if_depth)
 
         # load the _qubit_dict and _clbit_dict with register info
@@ -384,21 +384,23 @@ class MatplotlibDrawer:
                 wire_map.update(inner_wire_map)
                 flow_drawer[i]._load_flow_wire_maps(wire_map)
 
-    def _get_layer_widths(self, node_data, wire_map, nested_if_depth=[]):
+    def _get_layer_widths(self, node_data, wire_map, nested_if_depth):
         """Compute the layer_widths for the layers"""
 
         layer_widths = {}
+        layer_num = -1
         for i, layer in enumerate(self._nodes):
             widest_box = WID
+            layer_num += 1
             first_node = True
-            save_layer = {}
             for node in layer:
                 if first_node:
+                    save_layer = i
                     first_node = False
-                    save_layer[node] = i
                 else:
-                    save_layer[node] = -1
-                layer_widths[node] = (1, save_layer[node])
+                    save_layer = -1
+                flow_parent = self._flow_node
+                layer_widths[node] = [1, layer_num, save_layer, flow_parent]
 
                 op = node.op
                 node_data[node] = {}
@@ -467,23 +469,19 @@ class MatplotlibDrawer:
                 elif isinstance(node.op, IfElseOp):
                     self._flow_drawers[node] = []
                     node_data[node]["width"] = []
+                    node_data[node]["if_depth"] = 0
                     gate_width = 0.0
 
-                    #print(node.op.params[0])
-                    #print(node.op.params[1])
                     # params[0] holds circuit for if, params[1] holds circuit for else
                     for k, circuit in enumerate(node.op.params):
-                        print(circuit)
                         raw_gate_width = 0.0
                         if circuit is None:  # No else
                             self._flow_drawers[node].append(None)
                             node_data[node]["width"].append(0.0)
                             break
 
-                        print(node.op)
-                        print(k, nested_if_depth)
-                        nested_if_depth[k] += 1
-                        print(k, nested_if_depth)
+                        if self._flow_node is not None:
+                            node_data[node]["if_depth"] = node_data[self._flow_node]["if_depth"] + 1
                         qubits, clbits, nodes = _get_layered_instructions(circuit)
                         flow_drawer = MatplotlibDrawer(qubits, clbits, nodes, circuit=circuit)
 
@@ -494,16 +492,14 @@ class MatplotlibDrawer:
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
 
-                        for width, layer_num in flow_widths.values():
-                            if layer_num != -1:
+                        curr_layer = 0
+                        for fnode, (width, layer_num, save_layer, flow_parent) in flow_widths.items():
+                            if save_layer != -1 and flow_parent == flow_drawer._flow_node:
+                                curr_layer = layer_num
                                 raw_gate_width += width
-                        # if raw_gate_width <= 0.0:
-                        #     raw_gate_width = 1.0
+
                         # Need extra incr of 1.0 for else box
-                        if nested_if_depth[k] < 2:
-                            gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
-                        else:
-                            gate_width = raw_gate_width + (1.0 if k == 1 else 0.0)
+                        gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
                         node_data[node]["width"].append(raw_gate_width)
                     self._load_flow_wire_maps(wire_map)
 
@@ -521,7 +517,7 @@ class MatplotlibDrawer:
                 if not isinstance(node.op, IfElseOp):
                     node_data[node]["width"] = max(raw_gate_width, raw_param_width)
             for node in layer:
-                layer_widths[node] = (int(widest_box) + 1, save_layer[node])
+                layer_widths[node][0] = int(widest_box) + 1
 
         return layer_widths
 
@@ -659,7 +655,7 @@ class MatplotlibDrawer:
                 ]
                 if flow_node is not None:
                     q_xy = []
-                    x_incr = 0.2 if is_if is True else 0.5
+                    x_incr = 0.2 if is_if else 0.5
                     for xy in node_data[node]["q_xy"]:
                         q_xy.append(
                             (
@@ -1321,22 +1317,23 @@ class MatplotlibDrawer:
         ypos = min(y[1] for y in xy)
         ypos_max = max(y[1] for y in xy)
 
-        if_width = node_data[node]["width"][0]
-        else_width = node_data[node]["width"][1]
         wid_incr = 0.5 * WID
-        wid = max(if_width + wid_incr, WID)
+        if_width = node_data[node]["width"][0] + wid_incr
+        else_width = node_data[node]["width"][1]
+        wid = max(if_width, WID)
         if else_width > 0.0:
             wid += max(else_width + wid_incr + 0.4, WID)
 
         qubit_span = abs(ypos) - abs(ypos_max)
         height = HIG + qubit_span
+        colors = [self._style["dispcol"]["h"][0], self._style["dispcol"]["u"][0], self._style["dispcol"]["x"][0]]
         box = self._patches_mod.FancyBboxPatch(
             xy=(xpos, ypos - 0.5 * HIG),
             width=wid,
             height=height,
             boxstyle="round, pad=0.1",
             fc="none",
-            ec=self._style["dispcol"]["cy"][0],
+            ec=colors[node_data[node]["if_depth"]],
             linewidth=3.0,
             zorder=PORDER_FLOW,
         )
@@ -1355,15 +1352,15 @@ class MatplotlibDrawer:
         )
         if else_width > 0.0:
             self._ax.plot(
-                [xpos + if_width + wid_incr, xpos + if_width + wid_incr],
+                [xpos + if_width, xpos + if_width],
                 [ypos - 0.5 * HIG - 0.1, ypos + height - 0.22],
-                color=self._style["dispcol"]["cy"][0],
+                color=colors[node_data[node]["if_depth"]],
                 linewidth=3.0,
                 linestyle="solid",
                 zorder=PORDER_FLOW,
             )
             self._ax.text(
-                xpos + if_width + wid_incr + 0.1,
+                xpos + if_width + 0.1,
                 ypos_max + 0.2,
                 "Else",
                 ha="left",
