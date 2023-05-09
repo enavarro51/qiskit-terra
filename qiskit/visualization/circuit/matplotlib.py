@@ -56,7 +56,7 @@ PORDER_LINE = 3
 PORDER_REGLINE = 2
 PORDER_GRAY = 3
 PORDER_TEXT = 6
-PORDER_FLOW = 7
+PORDER_FLOW = 1
 
 INFINITE_FOLD = 10000000
 
@@ -529,17 +529,18 @@ class MatplotlibDrawer:
         pos = y_off = -len(self._qubits) + 1
         for ii, wire in enumerate(wire_map):
 
-            if wire not in (self._qubits + self._clbits):
-                continue
-
             # if it's a creg, register is the key and just load the index
             if isinstance(wire, ClassicalRegister):
+                if wire[0] not in self._clbits:
+                    continue
                 register = wire
                 index = wire_map[wire]
 
             # otherwise, get the register from find_bit and use bit_index if
             # it's a bit, or the index of the bit in the register if it's a reg
             else:
+                if wire not in self._qubits + self._clbits:
+                    continue
                 register, bit_index, reg_index = get_bit_reg_index(self._circuit, wire)
                 index = bit_index if register is None else reg_index
 
@@ -903,7 +904,7 @@ class MatplotlibDrawer:
                     if node_data[node]["inside_flow"]:
                         for i, xy in enumerate(cond_xy):
                             cond_xy[i] = (node_data[node]["q_xy"][0][0], cond_xy[i][1])
-                    if clbits_dict:
+                    else:
                         curr_x_index = max(curr_x_index, self._x_index)
                     self._condition(node, node_data, wire_map, cond_xy)
 
@@ -932,7 +933,8 @@ class MatplotlibDrawer:
                 else:
                     self._multiqubit_gate(node, node_data)
 
-                l_width.append(layer_widths[node][0])
+                if not node_data[node]["inside_flow"]:
+                    l_width.append(layer_widths[node][0])
 
             # adjust the column if there have been barriers encountered, but not plotted
             barrier_offset = 0
@@ -941,8 +943,7 @@ class MatplotlibDrawer:
                 barrier_offset = (
                     -1 if all(getattr(nd.op, "_directive", False) for nd in layer) else 0
                 )
-
-            prev_x_index = curr_x_index + max(l_width) + barrier_offset - 1
+            prev_x_index = curr_x_index + (max(l_width) if l_width else 0) + barrier_offset - 1
 
     def _get_colors(self, node, node_data):
         """Get all the colors needed for drawing the circuit"""
@@ -1267,6 +1268,8 @@ class MatplotlibDrawer:
             )
         if c_xy:
             # annotate classical inputs
+            if node_data[node]["inside_flow"]:
+                cxpos += 1.13
             for bit, y in enumerate([x[1] for x in c_xy]):
                 self._ax.text(
                     cxpos + 0.07 - 0.5 * wid,
@@ -1326,7 +1329,7 @@ class MatplotlibDrawer:
             self._style["dispcol"]["h"][0],
             self._style["dispcol"]["u"][0],
             self._style["dispcol"]["x"][0],
-            self._style["dispcol"]["measure"][0],
+            self._style["cc"],
         ]
         box = self._patches_mod.FancyBboxPatch(
             xy=(xpos, ypos - 0.5 * HIG),
@@ -1639,7 +1642,7 @@ class MatplotlibDrawer:
         fold = self._fold if self._fold > 0 else INFINITE_FOLD
         h_pos = x_index % fold + 1
 
-        if h_pos + (gate_width - 1) > fold:
+        if not flow_x and h_pos + (gate_width - 1) > fold:
             x_index += fold - (h_pos - 1)
         x_pos = x_index % fold + x_offset + 0.04
         if not flow_x:
