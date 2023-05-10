@@ -60,6 +60,8 @@ PORDER_FLOW = 1
 
 INFINITE_FOLD = 10000000
 
+INFINITE_FOLD = 10000000
+
 
 @_optionals.HAS_MATPLOTLIB.require_in_instance
 @_optionals.HAS_PYLATEX.require_in_instance
@@ -285,19 +287,19 @@ class MatplotlibDrawer:
         self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict)
 
         # load the coordinates for each gate and compute number of folds
-        max_x = self._get_coords(node_data, wire_map, layer_widths, qubits_dict, clbits_dict)
-        num_folds = max(0, max_x - 1) // self._fold if self._fold > 0 else 0
+        max_x_index = self._get_coords(node_data, wire_map, layer_widths, qubits_dict, clbits_dict)
+        num_folds = max(0, max_x_index - 1) // self._fold if self._fold > 0 else 0
 
         # The window size limits are computed, followed by one of the four possible ways
         # of scaling the drawing.
 
         # compute the window size
-        if max_x > self._fold > 0:
+        if max_x_index > self._fold > 0:
             xmax = self._fold + self._x_offset + 0.1
             ymax = (num_folds + 1) * (self._n_lines + 1) - 1
         else:
             x_incr = 0.4 if not self._nodes else 0.9
-            xmax = max_x + 1 + self._x_offset - x_incr
+            xmax = max_x_index + 1 + self._x_offset - x_incr
             ymax = self._n_lines
 
         xl = -self._style["margin"][0]
@@ -349,8 +351,7 @@ class MatplotlibDrawer:
             self._plt_mod.text(
                 xl, yt, "Global Phase: %s" % pi_check(self._global_phase, output="mpl")
             )
-
-        self._draw_regs_wires(num_folds, xmax, max_x, qubits_dict, clbits_dict)
+        self._draw_regs_wires(num_folds, xmax, max_x_index, qubits_dict, clbits_dict)
         self._draw_ops(
             self._nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, verbose
         )
@@ -386,12 +387,12 @@ class MatplotlibDrawer:
         """Compute the layer_widths for the layers"""
 
         layer_widths = {}
-        layer_num = -1
-        for i, layer in enumerate(self._nodes):
+        for layer_num, layer in enumerate(self._nodes):
             widest_box = WID
             layer_num += 1
             first_node = True
             for node in layer:
+                # Put the layer_num in the first node in the layer and put -1 in the rest
                 if first_node:
                     first_node = False
                 else:
@@ -598,9 +599,8 @@ class MatplotlibDrawer:
         flow_node=None,
         is_if=None,
     ):
-        """Load all the coordinate info needed to place the gates on the drawing.
-        flow_node is node id for the parent of a gate inside a ControlFlowOp circuit.
-        """
+        """Load all the coordinate info needed to place the gates on the drawing."""
+
         prev_x_index = -1
         for i, layer in enumerate(self._nodes):
             curr_x_index = prev_x_index + 1
@@ -679,6 +679,7 @@ class MatplotlibDrawer:
 
     def _get_text_width(self, text, fontsize, param=False, reg_remove_under=None):
         """Compute the width of a string in the default font"""
+
         from pylatexenc.latex2text import LatexNodes2Text
 
         if not text:
@@ -722,7 +723,7 @@ class MatplotlibDrawer:
             sum_text *= self._subfont_factor
         return sum_text
 
-    def _draw_regs_wires(self, num_folds, xmax, max_x, qubits_dict, clbits_dict):
+    def _draw_regs_wires(self, num_folds, xmax, max_x_index, qubits_dict, clbits_dict):
         """Draw the register names and numbers, wires, and vertical lines at the ends"""
 
         for fold_num in range(num_folds + 1):
@@ -824,7 +825,7 @@ class MatplotlibDrawer:
 
         # draw index number
         if self._style["index"]:
-            for layer_num in range(max_x):
+            for layer_num in range(max_x_index):
                 if self._fold > 0:
                     x_coord = layer_num % self._fold + self._x_offset + 0.53
                     y_coord = -(layer_num // self._fold) * (self._n_lines + 1) + 0.65
@@ -946,6 +947,7 @@ class MatplotlibDrawer:
 
     def _get_colors(self, node, node_data):
         """Get all the colors needed for drawing the circuit"""
+
         op = node.op
         base_name = None if not hasattr(op, "base_gate") else op.base_gate.name
         color = None
