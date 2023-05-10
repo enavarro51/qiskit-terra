@@ -393,12 +393,11 @@ class MatplotlibDrawer:
             first_node = True
             for node in layer:
                 if first_node:
-                    save_layer = i
                     first_node = False
                 else:
-                    save_layer = -1
+                    layer_num = -1
                 flow_parent = self._flow_node
-                layer_widths[node] = [1, layer_num, save_layer, flow_parent]
+                layer_widths[node] = [1, layer_num, flow_parent]
 
                 op = node.op
                 node_data[node] = {}
@@ -489,8 +488,8 @@ class MatplotlibDrawer:
                         self._flow_drawers[node].append(flow_drawer)
 
                         curr_layer = 0
-                        for width, layer_num, save_layer, flow_parent in flow_widths.values():
-                            if save_layer != -1 and flow_parent == flow_drawer._flow_node:
+                        for width, layer_num, flow_parent in flow_widths.values():
+                            if layer_num != -1 and flow_parent == flow_drawer._flow_node:
                                 curr_layer = layer_num
                                 raw_gate_width += width
 
