@@ -627,7 +627,7 @@ class MatplotlibDrawer:
                 # For the plot_coord offset, use 0 if it's an "if" section of the
                 # if/else box, use the right edge of the "if" section if it's an else,
                 # and use _x_offset for all other ops
-                flow_x = isinstance(node.op, IfElseOp)
+                flow_op = isinstance(node.op, IfElseOp)
                 if flow_node is None:
                     offset = self._x_offset
                 elif is_if is False:
@@ -638,14 +638,14 @@ class MatplotlibDrawer:
                 # qubit coordinates
                 node_data[node]["q_xy"] = [
                     self._plot_coord(
-                        curr_x_index, qubits_dict[ii]["y"], layer_widths[node][0], offset, flow_x
+                        curr_x_index, qubits_dict[ii]["y"], layer_widths[node][0], offset, flow_op
                     )
                     for ii in q_indxs
                 ]
                 # clbit coordinates
                 node_data[node]["c_xy"] = [
                     self._plot_coord(
-                        curr_x_index, clbits_dict[ii]["y"], layer_widths[node][0], offset, flow_x
+                        curr_x_index, clbits_dict[ii]["y"], layer_widths[node][0], offset, flow_op
                     )
                     for ii in c_indxs
                 ]
@@ -890,14 +890,23 @@ class MatplotlibDrawer:
 
                 # add conditional
                 if getattr(op, "condition", None):
-                    flow_x = isinstance(op, IfElseOp)
+                    flow_op = isinstance(op, IfElseOp)
+                    if flow_op and node_data[node]["if_depth"] < 1:
+                        plot_x = curr_x_index
+                    else:
+                        if "c_xy" in node_data[node]:
+                            plot_x = node_data[node]["c_xy"][0][0] - 0.4
+                        else:
+                            plot_x = node_data[node]["q_xy"][0][0] - 0.4
+
+
                     cond_xy = [
                         self._plot_coord(
-                            curr_x_index,
+                            plot_x,
                             clbits_dict[ii]["y"],
                             layer_widths[node][0],
                             self._x_offset,
-                            flow_x,
+                            flow_op,
                         )
                         for ii in clbits_dict
                     ]
@@ -1637,16 +1646,17 @@ class MatplotlibDrawer:
                 zorder=zorder,
             )
 
-    def _plot_coord(self, x_index, y_index, gate_width, x_offset, flow_x=False):
+    def _plot_coord(self, x_index, y_index, gate_width, x_offset, flow_op=False):
         """Get the coord positions for an index"""
         # check folding
         fold = self._fold if self._fold > 0 else INFINITE_FOLD
         h_pos = x_index % fold + 1
 
-        if not flow_x and h_pos + (gate_width - 1) > fold:
+        print(h_pos, x_index, y_index, gate_width, x_offset, flow_op, self._n_lines)
+        if not flow_op and h_pos + (gate_width - 1) > fold:
             x_index += fold - (h_pos - 1)
         x_pos = x_index % fold + x_offset + 0.04
-        if not flow_x:
+        if not flow_op:
             x_pos += 0.5 * gate_width
         else:
             x_pos += 0.25
@@ -1654,4 +1664,5 @@ class MatplotlibDrawer:
 
         # could have been updated, so need to store
         self._x_index = x_index
+        print(x_pos, y_pos)
         return x_pos, y_pos
