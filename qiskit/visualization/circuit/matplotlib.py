@@ -352,9 +352,7 @@ class MatplotlibDrawer:
                 xl, yt, "Global Phase: %s" % pi_check(self._global_phase, output="mpl")
             )
         self._draw_regs_wires(num_folds, xmax, max_x_index, qubits_dict, clbits_dict)
-        self._draw_ops(
-            self._nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, verbose
-        )
+        self._draw_ops(self._nodes, node_data, wire_map, layer_widths, clbits_dict, verbose)
 
         if filename:
             self._figure.savefig(
@@ -389,13 +387,10 @@ class MatplotlibDrawer:
         layer_widths = {}
         for layer_num, layer in enumerate(self._nodes):
             widest_box = WID
-            layer_num += 1
-            first_node = True
-            for node in layer:
+            for i, node in enumerate(layer):
                 # Put the layer_num in the first node in the layer and put -1 in the rest
-                if first_node:
-                    first_node = False
-                else:
+                # so that layer widths are not counted more than once
+                if i != 0:
                     layer_num = -1
                 flow_parent = self._flow_node
                 layer_widths[node] = [1, layer_num, flow_parent]
@@ -602,7 +597,7 @@ class MatplotlibDrawer:
         """Load all the coordinate info needed to place the gates on the drawing."""
 
         prev_x_index = -1
-        for i, layer in enumerate(self._nodes):
+        for layer in self._nodes:
             curr_x_index = prev_x_index + 1
             l_width = []
             for node in layer:
@@ -875,7 +870,7 @@ class MatplotlibDrawer:
             nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict
         )
         prev_x_index = -1
-        for i, layer in enumerate(nodes):
+        for layer in nodes:
             l_width = []
             curr_x_index = prev_x_index + 1
 
