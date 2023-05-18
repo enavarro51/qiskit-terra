@@ -606,7 +606,6 @@ class MatplotlibDrawer:
             curr_x_index = prev_x_index + 1
             l_width = []
             for node in layer:
-                node_data[node]["inside_flow"] = False
 
                 # get qubit indexes
                 q_indxs = []
@@ -628,12 +627,12 @@ class MatplotlibDrawer:
                 # if/else box, use the right edge of the "if" section if it's an else,
                 # and use _x_offset for all other ops
                 flow_op = isinstance(node.op, IfElseOp)
-                if flow_node is None:
-                    offset = self._x_offset
-                elif is_if is False:
-                    offset = node_data[flow_node]["width"][0] + 0.5
+                if flow_node is not None:
+                    offset = 0 if is_if is True else node_data[flow_node]["width"][0] + 0.5
+                    node_data[node]["inside_flow"] = True
                 else:
-                    offset = 0
+                    offset = self._x_offset
+                    node_data[node]["inside_flow"] = False
 
                 # qubit coordinates
                 node_data[node]["q_xy"] = [
@@ -660,11 +659,12 @@ class MatplotlibDrawer:
                             )
                         )
                     node_data[node]["q_xy"] = q_xy
-                    node_data[node]["inside_flow"] = True
+                    #node_data[node]["inside_flow"] = True
 
                 # update index based on the value from plotting
                 curr_x_index = self._x_index
                 l_width.append(layer_widths[node][0])
+                node_data[node]["x_index"] = curr_x_index
 
             # adjust the column if there have been barriers encountered, but not plotted
             barrier_offset = 0
@@ -892,13 +892,9 @@ class MatplotlibDrawer:
                 if getattr(op, "condition", None):
                     flow_op = isinstance(op, IfElseOp)
                     if flow_op and node_data[node]["if_depth"] < 1:
-                        plot_x = curr_x_index
+                         plot_x = curr_x_index
                     else:
-                        if "c_xy" in node_data[node]:
-                            plot_x = node_data[node]["c_xy"][0][0] - 0.4
-                        else:
-                            plot_x = node_data[node]["q_xy"][0][0] - 0.4
-
+                         plot_x = node_data[node]["x_index"]
 
                     cond_xy = [
                         self._plot_coord(
@@ -913,8 +909,7 @@ class MatplotlibDrawer:
                     if node_data[node]["inside_flow"]:
                         for i, xy in enumerate(cond_xy):
                             cond_xy[i] = (node_data[node]["q_xy"][0][0], cond_xy[i][1])
-                    else:
-                        curr_x_index = max(curr_x_index, self._x_index)
+                    curr_x_index = max(curr_x_index, self._x_index)
                     self._condition(node, node_data, wire_map, cond_xy)
 
                 # draw measure
@@ -1652,7 +1647,6 @@ class MatplotlibDrawer:
         fold = self._fold if self._fold > 0 else INFINITE_FOLD
         h_pos = x_index % fold + 1
 
-        print(h_pos, x_index, y_index, gate_width, x_offset, flow_op, self._n_lines)
         if not flow_op and h_pos + (gate_width - 1) > fold:
             x_index += fold - (h_pos - 1)
         x_pos = x_index % fold + x_offset + 0.04
@@ -1664,5 +1658,4 @@ class MatplotlibDrawer:
 
         # could have been updated, so need to store
         self._x_index = x_index
-        print(x_pos, y_pos)
         return x_pos, y_pos
