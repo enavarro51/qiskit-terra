@@ -286,7 +286,9 @@ class MatplotlibDrawer:
         n_lines = self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict)
 
         # load the coordinates for each gate and compute number of folds
-        max_x_index = self._get_coords(node_data, wire_map, layer_widths, qubits_dict, clbits_dict, n_lines)
+        max_x_index = self._get_coords(
+            node_data, wire_map, layer_widths, qubits_dict, clbits_dict, n_lines
+        )
         num_folds = max(0, max_x_index - 1) // self._fold if self._fold > 0 else 0
 
         # The window size limits are computed, followed by one of the four possible ways
@@ -351,7 +353,16 @@ class MatplotlibDrawer:
                 xl, yt, "Global Phase: %s" % pi_check(self._global_phase, output="mpl")
             )
         self._draw_regs_wires(num_folds, xmax, max_x_index, qubits_dict, clbits_dict, n_lines)
-        self._draw_ops(self._nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, n_lines, verbose)
+        self._draw_ops(
+            self._nodes,
+            node_data,
+            wire_map,
+            layer_widths,
+            qubits_dict,
+            clbits_dict,
+            n_lines,
+            verbose,
+        )
 
         if filename:
             self._figure.savefig(
@@ -475,7 +486,16 @@ class MatplotlibDrawer:
                         if self._flow_node is not None:
                             node_data[node]["if_depth"] = node_data[self._flow_node]["if_depth"] + 1
                         qubits, clbits, nodes = _get_layered_instructions(circuit)
-                        flow_drawer = MatplotlibDrawer(qubits, clbits, nodes, circuit, style=self._style, plot_barriers=self._plot_barriers, fold=self._fold, cregbundle=self._cregbundle)
+                        flow_drawer = MatplotlibDrawer(
+                            qubits,
+                            clbits,
+                            nodes,
+                            circuit,
+                            style=self._style,
+                            plot_barriers=self._plot_barriers,
+                            fold=self._fold,
+                            cregbundle=self._cregbundle,
+                        )
 
                         flow_drawer._flow_node = node
                         flow_widths = flow_drawer._get_layer_widths(node_data, wire_map)
@@ -638,14 +658,24 @@ class MatplotlibDrawer:
                 # qubit coordinates
                 node_data[node]["q_xy"] = [
                     self._plot_coord(
-                        x_index, qubits_dict[ii]["y"], layer_widths[node][0], offset, n_lines, flow_op
+                        x_index,
+                        qubits_dict[ii]["y"],
+                        layer_widths[node][0],
+                        offset,
+                        n_lines,
+                        flow_op,
                     )
                     for ii in q_indxs
                 ]
                 # clbit coordinates
                 node_data[node]["c_xy"] = [
                     self._plot_coord(
-                        x_index, clbits_dict[ii]["y"], layer_widths[node][0], offset, n_lines, flow_op
+                        x_index,
+                        clbits_dict[ii]["y"],
+                        layer_widths[node][0],
+                        offset,
+                        n_lines,
+                        flow_op,
                     )
                     for ii in c_indxs
                 ]
@@ -875,7 +905,15 @@ class MatplotlibDrawer:
                 )
 
     def _draw_ops(
-        self, nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, n_lines, verbose=False
+        self,
+        nodes,
+        node_data,
+        wire_map,
+        layer_widths,
+        qubits_dict,
+        clbits_dict,
+        n_lines,
+        verbose=False,
     ):
         """Draw the gates in the circuit"""
         # Add the nodes from all the ControlFlowOps and their coordinates to the main nodes
@@ -900,9 +938,9 @@ class MatplotlibDrawer:
                 if getattr(op, "condition", None):
                     flow_op = isinstance(op, IfElseOp)
                     if flow_op and node_data[node]["if_depth"] < 1:
-                         plot_x = curr_x_index
+                        plot_x = curr_x_index
                     else:
-                         plot_x = node_data[node]["x_index"]
+                        plot_x = node_data[node]["x_index"]
 
                     print("Calling plot in")
                     cond_xy = [
