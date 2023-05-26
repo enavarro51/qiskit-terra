@@ -513,6 +513,8 @@ class MatplotlibDrawer:
 
                         # Need extra incr of 1.0 for else box
                         gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
+                        if k == 1:
+                            raw_gate_width += 0.045
                         node_data[node]["width"].append(raw_gate_width)
                     self._load_flow_wire_maps(wire_map)
 
@@ -625,16 +627,10 @@ class MatplotlibDrawer:
             l_width = []
             for node in layer:
 
-                # print("FLOW NODE", flow_parent)
-                # print("curr", curr_x_index)
-                # if "x_index" in node_data[node]:
-                #     print("x of node", node_data[node]["x_index"])
-                # else:
-                #     print("no x in node")
-                if flow_parent is not None and "x_index" not in node_data[node]:
-                    # print("flow_parent x", node_data[flow_parent]["x_index"])
+                if flow_parent is not None:# and "x_index" not in node_data[node]:
                     node_data[node]["x_index"] = node_data[flow_parent]["x_index"] + curr_x_index + 1
-                    #node_data[flow_parent]["x_index"] = curr_x_index
+                    if not is_if:
+                        node_data[node]["x_index"] += int(node_data[flow_parent]["width"][0]) + 1
 
                 # get qubit indexes
                 q_indxs = []
@@ -657,11 +653,9 @@ class MatplotlibDrawer:
                 # and use _x_offset for all other ops
                 flow_op = isinstance(node.op, IfElseOp)
                 if flow_parent is not None:
-                    offset = glob_data["x_offset"] if is_if is True else node_data[flow_parent]["width"][0] + 0.5
                     node_data[node]["inside_flow"] = True
-                    x_index = node_data[flow_parent]["x_index"] + curr_x_index + 1# + node_data[node]["x_index"] - 1
+                    x_index = node_data[node]["x_index"]
                 else:
-                    offset = glob_data["x_offset"]
                     node_data[node]["inside_flow"] = False
                     x_index = curr_x_index
 
@@ -671,7 +665,6 @@ class MatplotlibDrawer:
                         x_index,
                         qubits_dict[ii]["y"],
                         layer_widths[node][0],
-                        offset,
                         glob_data,
                         flow_op,
                         node_data[node]["inside_flow"],
@@ -684,7 +677,6 @@ class MatplotlibDrawer:
                         x_index,
                         clbits_dict[ii]["y"],
                         layer_widths[node][0],
-                        offset,
                         glob_data,
                         flow_op,
                         node_data[node]["inside_flow"],
@@ -694,15 +686,9 @@ class MatplotlibDrawer:
                 # update index based on the value from plotting
                 if flow_parent is None:
                     curr_x_index = glob_data["next_x_index"]
-                # print("CUrr after self", glob_data["next_x_index"])
                 l_width.append(layer_widths[node][0])
-                node_data[node]["x_index"] = x_index#curr_x_index
-                # print("flow parent", flow_parent)
-                # print(node_data[node]["x_index"])
-                # if flow_parent is not None:
-                #     print(node_data[flow_parent]["x_index"])
-                # print(node.op)
-                # print(node_data[node]["q_xy"])
+                node_data[node]["x_index"] = x_index
+
             # adjust the column if there have been barriers encountered, but not plotted
             barrier_offset = 0
             if not self._plot_barriers:
@@ -943,16 +929,12 @@ class MatplotlibDrawer:
                             node_data[node]["x_index"],
                             clbits_dict[ii]["y"],
                             layer_widths[node][0],
-                            glob_data["x_offset"],
                             glob_data,
                             flow_op,
                             node_data[node]["inside_flow"],
                         )
                         for ii in clbits_dict
                     ]
-                    if node_data[node]["inside_flow"]:
-                        for i, xy in enumerate(cond_xy):
-                            cond_xy[i] = (node_data[node]["q_xy"][0][0], cond_xy[i][1])
                     self._condition(node, node_data, wire_map, cond_xy)
 
                 # draw measure
@@ -1369,7 +1351,7 @@ class MatplotlibDrawer:
         else_width = node_data[node]["width"][1]
         wid = max(if_width, WID)
         if else_width > 0.0:
-            wid += max(else_width + wid_incr + 0.4, WID)
+            wid += max(else_width + wid_incr + 0.3, WID)
 
         qubit_span = abs(ypos) - abs(ypos_max)
         height = HIG + qubit_span
@@ -1392,7 +1374,7 @@ class MatplotlibDrawer:
         self._ax.add_patch(box)
         self._ax.spines["top"].set_visible(False)
         self._ax.text(
-            xpos + 0.02,
+            xpos + 0.22,
             ypos_max + 0.2,
             "If",
             ha="left",
@@ -1404,7 +1386,7 @@ class MatplotlibDrawer:
         )
         if else_width > 0.0:
             self._ax.plot(
-                [xpos + if_width, xpos + if_width],
+                [xpos + if_width + 0.3, xpos + if_width + 0.3],
                 [ypos - 0.5 * HIG - 0.1, ypos + height - 0.22],
                 color=colors[node_data[node]["if_depth"]],
                 linewidth=3.0,
@@ -1412,7 +1394,7 @@ class MatplotlibDrawer:
                 zorder=PORDER_FLOW,
             )
             self._ax.text(
-                xpos + if_width + 0.1,
+                xpos + if_width + 0.5,
                 ypos_max + 0.2,
                 "Else",
                 ha="left",
@@ -1684,27 +1666,21 @@ class MatplotlibDrawer:
                 zorder=zorder,
             )
 
-    def _plot_coord(self, x_index, y_index, gate_width, x_offset, glob_data, flow_op=False, inside_flow=False):
+    def _plot_coord(self, x_index, y_index, gate_width, glob_data, flow_op=False, inside_flow=False):
         """Get the coord positions for an index"""
         # check folding
         fold = self._fold if self._fold > 0 else INFINITE_FOLD
         h_pos = x_index % fold + 1
-        # print("\nx_index, y_index, self._fold, width, x_offset", x_index, y_index, self._fold, gate_width, x_offset)
-        # print("h_pos", h_pos)
 
         if not flow_op and h_pos + (gate_width - 1) > fold:
-            #print("folding, gate_width", gate_width)
             x_index += fold - (h_pos - 1)
-        x_pos = x_index % fold + x_offset + 0.04
+        x_pos = x_index % fold + glob_data["x_offset"] + 0.04
         if not flow_op:
             x_pos += 0.5 * gate_width
         else:
             x_pos += 0.25
-        #print("glob_data['n_lines']", glob_data["n_lines"])
         y_pos = y_index - (x_index // fold) * (glob_data["n_lines"] + 1)
-        #print("ypos", y_pos)
 
         # could have been updated, so need to store
         glob_data["next_x_index"] = x_index
-        #print("XPOS YPOS", x_pos, y_pos)
         return x_pos, y_pos
