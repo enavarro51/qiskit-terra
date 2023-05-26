@@ -60,8 +60,6 @@ PORDER_FLOW = 1
 
 INFINITE_FOLD = 10000000
 
-INFINITE_FOLD = 10000000
-
 
 @_optionals.HAS_MATPLOTLIB.require_in_instance
 @_optionals.HAS_PYLATEX.require_in_instance
@@ -157,7 +155,7 @@ class MatplotlibDrawer:
         self._lwidth2 = 2.0
         self._lwidth3 = 3.0
 
-        # Class instances of MatplotlibDrawer for each flow gate - If/Else, For, While
+        # Class instances of MatplotlibDrawer for each flow gate - If/Else, For, While, Switch
         self._flow_drawers = {}
 
         # _char_list for finding text_width of names, labels, and params
@@ -274,7 +272,7 @@ class MatplotlibDrawer:
         # and colors 'fc', 'ec', 'lc', 'sc', 'gt', and 'tc'
         node_data = {}
 
-        # glob_data contains global values used throughout, "n_lines", "x_offset", "last_x_index"
+        # glob_data contains global values used throughout, "n_lines", "x_offset", "next_x_index"
         glob_data = {}
 
         # dicts for the names and locations of register/bit labels
@@ -285,7 +283,9 @@ class MatplotlibDrawer:
         self._set_bit_reg_info(wire_map, qubits_dict, clbits_dict, glob_data)
 
         # get layer widths
-        layer_widths = self._get_layer_widths(node_data, wire_map, qubits_dict, clbits_dict, glob_data)
+        layer_widths = self._get_layer_widths(
+            node_data, wire_map, qubits_dict, clbits_dict, glob_data
+        )
 
         # load the coordinates for each top level gate and compute number of folds.
         # coordinates for flow gates are loaded before draw_ops
@@ -405,8 +405,7 @@ class MatplotlibDrawer:
                 # so that layer widths are not counted more than once
                 if i != 0:
                     layer_num = -1
-                flow_parent = self._flow_parent
-                layer_widths[node] = [1, layer_num, flow_parent]
+                layer_widths[node] = [1, layer_num, self._flow_parent]
 
                 op = node.op
                 node_data[node] = {}
@@ -486,8 +485,13 @@ class MatplotlibDrawer:
                             node_data[node]["width"].append(0.0)
                             break
 
+                        # Depth of nested if/else used for color of box
                         if self._flow_parent is not None:
-                            node_data[node]["if_depth"] = node_data[self._flow_parent]["if_depth"] + 1
+                            node_data[node]["if_depth"] = (
+                                node_data[self._flow_parent]["if_depth"] + 1
+                            )
+                        # Get the layered node lists and instantiate a new drawer class for
+                        # the circuit inside the if or else.
                         qubits, clbits, nodes = _get_layered_instructions(circuit)
                         flow_drawer = MatplotlibDrawer(
                             qubits,
@@ -499,9 +503,13 @@ class MatplotlibDrawer:
                             fold=self._fold,
                             cregbundle=self._cregbundle,
                         )
-
+                        # flow_parent is the parent of the new class instance
                         flow_drawer._flow_parent = node
-                        flow_widths = flow_drawer._get_layer_widths(node_data, wire_map, qubits_dict, clbits_dict, glob_data)
+
+                        # Recursively call _get_layer_widths for the circuit inside the if/else
+                        flow_widths = flow_drawer._get_layer_widths(
+                            node_data, wire_map, qubits_dict, clbits_dict, glob_data
+                        )
                         layer_widths.update(flow_widths)
                         self._flow_drawers[node].append(flow_drawer)
 
@@ -513,6 +521,8 @@ class MatplotlibDrawer:
 
                         # Need extra incr of 1.0 for else box
                         gate_width += raw_gate_width + (1.0 if k == 1 else 0.0)
+
+                        # Minor adjustment so else section gates align with indexes
                         if k == 1:
                             raw_gate_width += 0.045
                         node_data[node]["width"].append(raw_gate_width)
@@ -626,9 +636,12 @@ class MatplotlibDrawer:
             curr_x_index = prev_x_index + 1
             l_width = []
             for node in layer:
-
-                if flow_parent is not None:# and "x_index" not in node_data[node]:
-                    node_data[node]["x_index"] = node_data[flow_parent]["x_index"] + curr_x_index + 1
+                # For gates inside if/else, set the x_index and increment by if width
+                # if it's an else
+                if flow_parent is not None:
+                    node_data[node]["x_index"] = (
+                        node_data[flow_parent]["x_index"] + curr_x_index + 1
+                    )
                     if not is_if:
                         node_data[node]["x_index"] += int(node_data[flow_parent]["width"][0]) + 1
 
@@ -648,9 +661,6 @@ class MatplotlibDrawer:
                         else:
                             c_indxs.append(wire_map[carg])
 
-                # For the plot_coord offset, use 0 if it's an "if" section of the
-                # if/else box, use the right edge of the "if" section if it's an else,
-                # and use _x_offset for all other ops
                 flow_op = isinstance(node.op, IfElseOp)
                 if flow_parent is not None:
                     node_data[node]["inside_flow"] = True
@@ -667,7 +677,6 @@ class MatplotlibDrawer:
                         layer_widths[node][0],
                         glob_data,
                         flow_op,
-                        node_data[node]["inside_flow"],
                     )
                     for ii in q_indxs
                 ]
@@ -679,7 +688,6 @@ class MatplotlibDrawer:
                         layer_widths[node][0],
                         glob_data,
                         flow_op,
-                        node_data[node]["inside_flow"],
                     )
                     for ii in c_indxs
                 ]
@@ -874,8 +882,9 @@ class MatplotlibDrawer:
         """Add the nodes from ControlFlowOps and their coordinates to the main circuit"""
         for flow_drawer in self._flow_drawers.values():
             for i in range(0, 2):
-                if flow_drawer[i] is None:
+                if flow_drawer[i] is None:  # No else
                     continue
+
                 nodes += flow_drawer[i]._nodes
                 flow_drawer[i]._get_coords(
                     node_data,
@@ -887,6 +896,7 @@ class MatplotlibDrawer:
                     flow_parent=flow_drawer[i]._flow_parent,
                     is_if=True if i == 0 else False,
                 )
+                # Recurse for if/else ops inside the flow_drawer
                 flow_drawer[i]._add_nodes_and_coords(
                     nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, glob_data
                 )
@@ -903,6 +913,7 @@ class MatplotlibDrawer:
         verbose=False,
     ):
         """Draw the gates in the circuit"""
+
         # Add the nodes from all the ControlFlowOps and their coordinates to the main nodes
         self._add_nodes_and_coords(
             nodes, node_data, wire_map, layer_widths, qubits_dict, clbits_dict, glob_data
@@ -923,15 +934,13 @@ class MatplotlibDrawer:
 
                 # add conditional
                 if getattr(op, "condition", None):
-                    flow_op = isinstance(op, IfElseOp)
                     cond_xy = [
                         self._plot_coord(
                             node_data[node]["x_index"],
                             clbits_dict[ii]["y"],
                             layer_widths[node][0],
                             glob_data,
-                            flow_op,
-                            node_data[node]["inside_flow"],
+                            isinstance(op, IfElseOp),
                         )
                         for ii in clbits_dict
                     ]
@@ -962,6 +971,7 @@ class MatplotlibDrawer:
                 else:
                     self._multiqubit_gate(node, node_data)
 
+                # Determine the max width of the circuit only at the top level
                 if not node_data[node]["inside_flow"]:
                     l_width.append(layer_widths[node][0])
 
@@ -1073,6 +1083,8 @@ class MatplotlibDrawer:
 
         qubit_b = min(node_data[node]["q_xy"], key=lambda xy: xy[1])
         clbit_b = min(xy_plot, key=lambda xy: xy[1])
+
+        # For IfElseOps, place the condition at almost the left edge of the box
         if isinstance(node.op, IfElseOp):
             qubit_b = (qubit_b[0], qubit_b[1] - (0.5 * HIG + 0.14))
 
@@ -1298,8 +1310,6 @@ class MatplotlibDrawer:
             )
         if c_xy:
             # annotate classical inputs
-            if node_data[node]["inside_flow"]:
-                cxpos += 1.13
             for bit, y in enumerate([x[1] for x in c_xy]):
                 self._ax.text(
                     cxpos + 0.07 - 0.5 * wid,
@@ -1346,21 +1356,24 @@ class MatplotlibDrawer:
         ypos = min(y[1] for y in xy)
         ypos_max = max(y[1] for y in xy)
 
-        wid_incr = 1.0 * WID
-        if_width = node_data[node]["width"][0] + wid_incr
+        if_width = node_data[node]["width"][0] + WID
         else_width = node_data[node]["width"][1]
         wid = max(if_width, WID)
         if else_width > 0.0:
-            wid += max(else_width + wid_incr + 0.3, WID)
+            wid += else_width + WID + 0.3
 
         qubit_span = abs(ypos) - abs(ypos_max)
         height = HIG + qubit_span
+
+        # Cycle through box colors based on depth.
+        # Default - blue, purple, green, black
         colors = [
             self._style["dispcol"]["h"][0],
             self._style["dispcol"]["u"][0],
             self._style["dispcol"]["x"][0],
             self._style["cc"],
         ]
+        # FancyBbox allows rounded corners
         box = self._patches_mod.FancyBboxPatch(
             xy=(xpos, ypos - 0.5 * HIG),
             width=wid,
@@ -1666,12 +1679,14 @@ class MatplotlibDrawer:
                 zorder=zorder,
             )
 
-    def _plot_coord(self, x_index, y_index, gate_width, glob_data, flow_op=False, inside_flow=False):
+    def _plot_coord(self, x_index, y_index, gate_width, glob_data, flow_op=False):
         """Get the coord positions for an index"""
-        # check folding
+
+        # Check folding
         fold = self._fold if self._fold > 0 else INFINITE_FOLD
         h_pos = x_index % fold + 1
 
+        # Don't fold flow_ops here, only gates inside the flow_op
         if not flow_op and h_pos + (gate_width - 1) > fold:
             x_index += fold - (h_pos - 1)
         x_pos = x_index % fold + glob_data["x_offset"] + 0.04
@@ -1681,6 +1696,6 @@ class MatplotlibDrawer:
             x_pos += 0.25
         y_pos = y_index - (x_index // fold) * (glob_data["n_lines"] + 1)
 
-        # could have been updated, so need to store
+        # x_index could have been updated, so need to store
         glob_data["next_x_index"] = x_index
         return x_pos, y_pos
