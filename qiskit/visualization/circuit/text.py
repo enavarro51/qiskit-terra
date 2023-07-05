@@ -20,9 +20,8 @@ import itertools
 import sys
 
 from qiskit.circuit import Qubit, Clbit, ClassicalRegister
-from qiskit.circuit import ControlledGate
-from qiskit.circuit import Reset
-from qiskit.circuit import Measure
+from qiskit.circuit import ControlledGate, Reset, Measure
+from qiskit.circuit import ControlFlowOp, WhileLoopOp, IfElseOp, ForLoopOp, SwitchCaseOp
 from qiskit.circuit.library.standard_gates import IGate, RZZGate, SwapGate, SXGate, SXdgGate
 from qiskit.circuit.tools.pi_check import pi_check
 
@@ -34,6 +33,7 @@ from ._utils import (
     get_bit_reg_index,
     get_wire_label,
     get_condition_label_val,
+    _get_layered_instructions,
 )
 from ..exceptions import VisualizationError
 
@@ -1138,17 +1138,69 @@ class TextDrawing:
             layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit)
 
             for node in node_layer:
-                layer, current_cons, current_cons_cond, connection_label = self._node_to_gate(
-                    node, layer
-                )
+                if isinstance(node.op, ControlFlowOp):
+                    self.add_control_flow(node.op, layers)
+                else:
+                    layer, current_cons, current_cons_cond, connection_label = self._node_to_gate(
+                        node, layer
+                    )
 
-                layer.connections.append((connection_label, current_cons))
-                layer.connections.append((None, current_cons_cond))
+                    layer.connections.append((connection_label, current_cons))
+                    layer.connections.append((None, current_cons_cond))
             layer.connect_with("│")
             layers.append(layer.full_layer)
 
         return layers
 
+    def add_control_flow(self, op, layers):
+        # params[0] holds circuit for if or while, params[1] holds circuit for else,
+        # params is [indexset, loop_param, circuit] for for_loop,
+        # op.cases_specifier() returns jump tuple and circuit for switch/case
+        circuit_list = []
+        if isinstance(op, IfElseOp):
+            for k in range(2):
+                circuit_list.append(op.params[k])
+        elif isinstance(op, WhileLoopOp):
+            circuit_list.append(op.params[0])
+        elif isinstance(op, ForLoopOp):
+            node_data[node]["indexset"], _, circ = op.params
+            circuit_list.append(circ)
+        elif isinstance(op, SwitchCaseOp):
+            node_data[node]["jump_values"] = []
+            cases = list(op.cases_specifier())
+
+            # Create an empty circuit for the Switch box
+            circuit_list.append(cases[0][1].copy_empty_like())
+            for jump_values, circ in cases:
+                node_data[node]["jump_values"].append(jump_values)
+                circuit_list.append(circ)
+
+        for circuit in circuit_list:
+            if circuit is None:  # If with no else
+                break
+            # Update the wire_map with the qubits from the inner circuit
+            inner_wire_map = {
+                inner: self._wire_map[outer]
+                for outer, inner in zip(self.clbits, circuit.clbits)
+                if inner not in self._wire_map
+            }
+            self._wire_map.update(inner_wire_map)
+            qubits, clbits, if_nodes = _get_layered_instructions(
+                circuit, wire_map=self._wire_map
+            )
+            for if_layer in if_nodes:
+                if_layer2 = Layer(self.qubits, self.clbits, self.cregbundle, circuit)
+                for if_node in if_layer:
+                    if isinstance(if_node.op, ControlFlowOp):
+                        self.add_control_flow(if_node.op, layers)
+                    if_layer2, current_cons, current_cons_cond, connection_label = self._node_to_gate(
+                        if_node, if_layer2
+                    )
+                    if_layer2.connections.append((connection_label, current_cons))
+                    if_layer2.connections.append((None, current_cons_cond))
+
+                if_layer2.connect_with("│")
+                layers.append(if_layer2.full_layer)
 
 class Layer:
     """A layer is the "column" of the circuit."""
@@ -1253,7 +1305,7 @@ class Layer:
                 self.set_qubit(
                     named_bit, BoxOnQuWireMid(label, box_height, order, wire_label=wire_label)
                 )
-            for order, bit_i in enumerate(range(max(cbit_index)), order + 1):
+            for order, bit_i in enumerate(cbit_index):#range(max(cbit_index)), order + 1):
                 if bit_i in cbit_index:
                     named_bit = clbits.pop(0)
                     wire_label = cargs.pop(0)
@@ -1264,7 +1316,7 @@ class Layer:
                     named_bit, BoxOnClWireMid(label, box_height, order, wire_label=wire_label)
                 )
             self.set_clbit(
-                clbits.pop(0), BoxOnClWireBot(label, box_height, wire_label=cargs.pop(0))
+                named_bit, BoxOnClWireBot(label, box_height, wire_label=wire_label)#cargs.pop(0))
             )
             return cbit_index
         if qubits is None and clbits is not None:
