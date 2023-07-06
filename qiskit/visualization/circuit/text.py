@@ -989,7 +989,7 @@ class TextDrawing:
                 gates.append(OpenBullet(conditional=conditional, label=ctrl_text, bottom=bottom))
         return gates
 
-    def _node_to_gate(self, node, layer):
+    def _node_to_gate(self, node, layer, qubits=None, clbits=None):
         """Convert a dag op node into its corresponding Gate object, and establish
         any connections it introduces between qubits"""
         op = node.op
@@ -1189,12 +1189,12 @@ class TextDrawing:
                 circuit, wire_map=self._wire_map
             )
             for if_layer in if_nodes:
-                if_layer2 = Layer(self.qubits, self.clbits, self.cregbundle, circuit)
+                if_layer2 = Layer(qubits, clbits, self.cregbundle, circuit)
                 for if_node in if_layer:
                     if isinstance(if_node.op, ControlFlowOp):
                         self.add_control_flow(if_node.op, layers)
                     if_layer2, current_cons, current_cons_cond, connection_label = self._node_to_gate(
-                        if_node, if_layer2
+                        if_node, if_layer2, qubits=qubits, clbits=clbits
                     )
                     if_layer2.connections.append((connection_label, current_cons))
                     if_layer2.connections.append((None, current_cons_cond))
@@ -1270,6 +1270,7 @@ class Layer:
         conditional=False,
         controlled_edge=None,
     ):
+        print("\n first clbits", clbits)
         if qubits is not None and clbits is not None:
             cbit_index = sorted(i for i, x in enumerate(self.clbits) if x in clbits)
             qbit_index = sorted(i for i, x in enumerate(self.qubits) if x in qubits)
@@ -1290,6 +1291,7 @@ class Layer:
 
             qubits = sorted(qubits, key=self.qubits.index)
             clbits = sorted(clbits, key=self.clbits.index)
+            print("\nclbits", clbits)
 
             box_height = len(self.qubits) - min(qbit_index) + max(cbit_index) + 1
 
@@ -1305,7 +1307,8 @@ class Layer:
                 self.set_qubit(
                     named_bit, BoxOnQuWireMid(label, box_height, order, wire_label=wire_label)
                 )
-            for order, bit_i in enumerate(cbit_index):#range(max(cbit_index)), order + 1):
+            for order, bit_i in enumerate(range(max(cbit_index)), order + 1):
+                print(order, bit_i)
                 if bit_i in cbit_index:
                     named_bit = clbits.pop(0)
                     wire_label = cargs.pop(0)
@@ -1316,7 +1319,7 @@ class Layer:
                     named_bit, BoxOnClWireMid(label, box_height, order, wire_label=wire_label)
                 )
             self.set_clbit(
-                named_bit, BoxOnClWireBot(label, box_height, wire_label=wire_label)#cargs.pop(0))
+                clbits.pop(0), BoxOnClWireBot(label, box_height, wire_label=cargs.pop(0))
             )
             return cbit_index
         if qubits is None and clbits is not None:
