@@ -37,6 +37,11 @@ from ._utils import (
 )
 from ..exceptions import VisualizationError
 
+# Indicators for left, middle, and right of control flow gates
+CF_LEFT = 0
+CF_MID = 1
+CF_RIGHT = 2
+
 
 class TextDrawerEncodingError(VisualizationError):
     """A problem with encoding"""
@@ -989,7 +994,7 @@ class TextDrawing:
                 gates.append(OpenBullet(conditional=conditional, label=ctrl_text, bottom=bottom))
         return gates
 
-    def _node_to_gate(self, node, layer, qubits=None, clbits=None):
+    def _node_to_gate(self, node, layer):
         """Convert a dag op node into its corresponding Gate object, and establish
         any connections it introduces between qubits"""
         op = node.op
@@ -1139,7 +1144,7 @@ class TextDrawing:
 
             for node in node_layer:
                 if isinstance(node.op, ControlFlowOp):
-                    self.add_control_flow(node.op, layers)
+                    self.add_control_flow(node, layers)
                 else:
                     layer, current_cons, current_cons_cond, connection_label = self._node_to_gate(
                         node, layer
@@ -1152,10 +1157,15 @@ class TextDrawing:
 
         return layers
 
-    def add_control_flow(self, op, layers):
+    def add_control_flow(self, node, layers):
+
+        flow_layer = self.draw_flow_box(node, CF_LEFT)
+        layers.append(flow_layer.full_layer)
+
         # params[0] holds circuit for if or while, params[1] holds circuit for else,
         # params is [indexset, loop_param, circuit] for for_loop,
         # op.cases_specifier() returns jump tuple and circuit for switch/case
+        op = node.op
         circuit_list = []
         if isinstance(op, IfElseOp):
             for k in range(2):
@@ -1166,18 +1176,22 @@ class TextDrawing:
             node_data[node]["indexset"], _, circ = op.params
             circuit_list.append(circ)
         elif isinstance(op, SwitchCaseOp):
-            node_data[node]["jump_values"] = []
+            # node_data[node]["jump_values"] = []
             cases = list(op.cases_specifier())
 
             # Create an empty circuit for the Switch box
             circuit_list.append(cases[0][1].copy_empty_like())
             for jump_values, circ in cases:
-                node_data[node]["jump_values"].append(jump_values)
+                # node_data[node]["jump_values"].append(jump_values)
                 circuit_list.append(circ)
 
-        for circuit in circuit_list:
+        for circ_num, circuit in enumerate(circuit_list):
             if circuit is None:  # If with no else
                 break
+            if circ_num > 0:
+                flow_layer = self.draw_flow_box(node, CF_MID)
+                layers.append(flow_layer.full_layer)
+
             # Update the wire_map with the qubits from the inner circuit
             inner_wire_map = {
                 inner: self._wire_map[outer]
@@ -1185,22 +1199,43 @@ class TextDrawing:
                 if inner not in self._wire_map
             }
             self._wire_map.update(inner_wire_map)
-            qubits, clbits, if_nodes = _get_layered_instructions(
-                circuit, wire_map=self._wire_map
-            )
+            qubits, clbits, if_nodes = _get_layered_instructions(circuit, wire_map=self._wire_map)
             for if_layer in if_nodes:
-                if_layer2 = Layer(qubits, clbits, self.cregbundle, circuit)
+                if_layer2 = Layer(qubits, clbits, self.cregbundle, self._circuit)
                 for if_node in if_layer:
                     if isinstance(if_node.op, ControlFlowOp):
-                        self.add_control_flow(if_node.op, layers)
-                    if_layer2, current_cons, current_cons_cond, connection_label = self._node_to_gate(
-                        if_node, if_layer2, qubits=qubits, clbits=clbits
-                    )
+                        self.add_control_flow(if_node, layers)
+                    else:
+                        (
+                            if_layer2,
+                            current_cons,
+                            current_cons_cond,
+                            connection_label,
+                        ) = self._node_to_gate(if_node, if_layer2)
                     if_layer2.connections.append((connection_label, current_cons))
                     if_layer2.connections.append((None, current_cons_cond))
 
                 if_layer2.connect_with("│")
                 layers.append(if_layer2.full_layer)
+        flow_layer = self.draw_flow_box(node, CF_RIGHT)
+        layers.append(flow_layer.full_layer)
+
+    def draw_flow_box(self, node, section):
+        """Draw the left, middle, or right of a control flow box"""
+        flow_layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit)
+        flow_layer.set_qu_multibox(label="If\n" + str(section), bits=node.qargs)
+        if isinstance(node.op, SwitchCaseOp):
+            if isinstance(node.op.target, Clbit):
+                condition = (node.op.target, 1)
+            else:
+                condition = (node.op.target, 2 ** (node.op.target.size) - 1)
+        else:
+            condition = node.op.condition
+        current_cons_cond = flow_layer.set_cl_multibox(condition, top_connect="╨")
+        conditional = True
+
+        return flow_layer
+
 
 class Layer:
     """A layer is the "column" of the circuit."""
@@ -1270,7 +1305,6 @@ class Layer:
         conditional=False,
         controlled_edge=None,
     ):
-        print("\n first clbits", clbits)
         if qubits is not None and clbits is not None:
             cbit_index = sorted(i for i, x in enumerate(self.clbits) if x in clbits)
             qbit_index = sorted(i for i, x in enumerate(self.qubits) if x in qubits)
@@ -1291,7 +1325,6 @@ class Layer:
 
             qubits = sorted(qubits, key=self.qubits.index)
             clbits = sorted(clbits, key=self.clbits.index)
-            print("\nclbits", clbits)
 
             box_height = len(self.qubits) - min(qbit_index) + max(cbit_index) + 1
 
@@ -1308,7 +1341,6 @@ class Layer:
                     named_bit, BoxOnQuWireMid(label, box_height, order, wire_label=wire_label)
                 )
             for order, bit_i in enumerate(range(max(cbit_index)), order + 1):
-                print(order, bit_i)
                 if bit_i in cbit_index:
                     named_bit = clbits.pop(0)
                     wire_label = cargs.pop(0)
