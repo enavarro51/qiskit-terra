@@ -262,6 +262,12 @@ class BoxOnQuWireTop(MultiBox, BoxOnQuWire):
     """Draws the top part of a box that affects more than one quantum wire"""
 
     def __init__(self, label="", top_connect=None, wire_label=""):
+        print(
+            "Box top",
+            "*" + label + "*",
+            "*" + top_connect + "*" if top_connect is not None else top_connect,
+            "*" + wire_label + "*",
+        )
         super().__init__(label)
         self.wire_label = wire_label
         self.bot_connect = self.bot_pad = " "
@@ -292,6 +298,7 @@ class BoxOnQuWireMid(BoxOnWireMid, BoxOnQuWire):
     """Draws the middle part of a box that affects more than one quantum wire"""
 
     def __init__(self, label, input_length, order, wire_label="", control_label=None):
+        print("Box mid", "*" + label + "*", input_length, order, "*" + wire_label + "*")
         super().__init__(label, input_length, order, wire_label=wire_label)
         if control_label:
             self.mid_format = f"{control_label}{self.wire_label} %s ├"
@@ -303,6 +310,13 @@ class BoxOnQuWireBot(MultiBox, BoxOnQuWire):
     """Draws the bottom part of a box that affects more than one quantum wire"""
 
     def __init__(self, label, input_length, bot_connect=None, wire_label="", conditional=False):
+        print(
+            "Box bot",
+            "*" + label + "*",
+            input_length,
+            "*" + bot_connect + "*" if bot_connect is not None else bot_connect,
+            "*" + wire_label + "*",
+        )
         super().__init__(label)
         self.wire_label = wire_label
         self.top_pad = " "
@@ -310,6 +324,71 @@ class BoxOnQuWireBot(MultiBox, BoxOnQuWire):
         self.top_format = f"│{self.top_pad * self.left_fill} %s │"
         self.mid_format = f"┤{self.wire_label} %s ├"
         self.bot_format = "└─" + "s".center(self.left_fill + 1, "─") + "─┘"
+        self.bot_format = self.bot_format.replace("s", "%s")
+        bot_connect = bot_connect if bot_connect else "─"
+        self.bot_connect = "╥" if conditional else bot_connect
+
+        self.mid_content = self.top_connect = ""
+        if input_length <= 2:
+            self.top_connect = label
+
+
+class FlowOnQuWireTop(MultiBox, BoxOnQuWire):
+    """Draws the top part of a box that affects more than one quantum wire"""
+
+    def __init__(self, label="", top_connect=None, wire_label=""):
+        print(
+            "Flo top",
+            "*" + label + "*",
+            "*" + top_connect + "*" if top_connect is not None else top_connect,
+            "*" + wire_label + "*",
+        )
+        super().__init__(label)
+        self.wire_label = wire_label
+        self.bot_connect = self.bot_pad = " "
+        self.mid_content = ""  # The label will be put by some other part of the box.
+        self.left_fill = len(self.wire_label)
+        self.top_format = "┌─" + "s".center(self.left_fill + 1, "─")  # + "─┐"
+        self.top_format = self.top_format.replace("s", "%s")
+        self.mid_format = f"┤{self.wire_label} %s"  # ├"
+        self.bot_format = f"│{self.bot_pad * self.left_fill} %s"  # │"
+        self.top_connect = top_connect if top_connect else "─"
+
+
+class FlowOnQuWireMid(MultiBox, BoxOnQuWire):
+    """A generic middle box"""
+
+    def __init__(self, label, input_length, order, wire_label=""):
+        print("Flo mid", "*" + label + "*", input_length, order, "*" + wire_label + "*")
+        super().__init__(label)
+        self.top_pad = self.bot_pad = self.top_connect = self.bot_connect = " "
+        self.wire_label = wire_label
+        self.left_fill = len(self.wire_label)
+        self.top_format = f"│{self.top_pad * self.left_fill} %s"  # │"
+        self.bot_format = f"│{self.bot_pad * self.left_fill} %s"  # │"
+        self.mid_format = f"┤{self.wire_label} %s"  # ├"
+        self.top_connect = self.bot_connect = self.mid_content = ""
+        self.center_label(input_length, order)
+
+
+class FlowOnQuWireBot(MultiBox, BoxOnQuWire):
+    """Draws the bottom part of a box that affects more than one quantum wire"""
+
+    def __init__(self, label, input_length, bot_connect=None, wire_label="", conditional=False):
+        print(
+            " bot",
+            "*" + label + "*",
+            input_length,
+            "*" + bot_connect + "*" if bot_connect is not None else bot_connect,
+            "*" + wire_label + "*",
+        )
+        super().__init__(label)
+        self.wire_label = wire_label
+        self.top_pad = " "
+        self.left_fill = len(self.wire_label)
+        self.top_format = f"│{self.top_pad * self.left_fill} %s"  # │"
+        self.mid_format = f"┤{self.wire_label} %s"  # ├"
+        self.bot_format = "└─" + "s".center(self.left_fill + 1, "─")  # + "─┘"
         self.bot_format = self.bot_format.replace("s", "%s")
         bot_connect = bot_connect if bot_connect else "─"
         self.bot_connect = "╥" if conditional else bot_connect
@@ -964,12 +1043,12 @@ class TextDrawing:
         top_box = []
         bot_box = []
 
-        qubit_index = sorted(i for i, x in enumerate(layer.qubits) if x in args_qubits)
+        qubit_indices = sorted(i for i, x in enumerate(layer.qubits) if x in args_qubits)
 
         for ctrl_qubit in zip(ctrl_qubits, ctrl_state):
-            if min(qubit_index) > layer.qubits.index(ctrl_qubit[0]):
+            if min(qubit_indices) > layer.qubits.index(ctrl_qubit[0]):
                 top_box.append(ctrl_qubit)
-            elif max(qubit_index) < layer.qubits.index(ctrl_qubit[0]):
+            elif max(qubit_indices) < layer.qubits.index(ctrl_qubit[0]):
                 bot_box.append(ctrl_qubit)
             else:
                 in_box.append(ctrl_qubit)
@@ -1107,8 +1186,8 @@ class TextDrawing:
         elif node.qargs and node.cargs:
             layer._set_multibox(
                 gate_text,
-                qubits=node.qargs,
-                clbits=node.cargs,
+                qargs=node.qargs,
+                cargs=node.cargs,
                 conditional=conditional,
             )
         else:
@@ -1140,7 +1219,7 @@ class TextDrawing:
         layers = [InputWire.fillup_layer(wire_names)]
 
         for node_layer in self.nodes:
-            layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit)
+            layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit, self._wire_map)
 
             for node in node_layer:
                 if isinstance(node.op, ControlFlowOp):
@@ -1201,7 +1280,7 @@ class TextDrawing:
             self._wire_map.update(inner_wire_map)
             qubits, clbits, if_nodes = _get_layered_instructions(circuit, wire_map=self._wire_map)
             for if_layer in if_nodes:
-                if_layer2 = Layer(qubits, clbits, self.cregbundle, self._circuit)
+                if_layer2 = Layer(qubits, clbits, self.cregbundle, self._circuit, self._wire_map)
                 for if_node in if_layer:
                     if isinstance(if_node.op, ControlFlowOp):
                         self.add_control_flow(if_node, layers)
@@ -1222,17 +1301,42 @@ class TextDrawing:
 
     def draw_flow_box(self, node, section):
         """Draw the left, middle, or right of a control flow box"""
-        flow_layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit)
-        flow_layer.set_qu_multibox(label="If\n" + str(section), bits=node.qargs)
-        if isinstance(node.op, SwitchCaseOp):
-            if isinstance(node.op.target, Clbit):
-                condition = (node.op.target, 1)
-            else:
-                condition = (node.op.target, 2 ** (node.op.target.size) - 1)
+        conditional = section == CF_LEFT
+        if section == CF_LEFT:
+            label = "If"
+        elif section == CF_MID:
+            label = "Else"
         else:
-            condition = node.op.condition
-        current_cons_cond = flow_layer.set_cl_multibox(condition, top_connect="╨")
-        conditional = True
+            label = "EndIf"
+
+        flow_layer = Layer(self.qubits, self.clbits, self.cregbundle, self._circuit, self._wire_map)
+        # flow_layer.set_qu_multibox(label="If" + str(section), bits=node.qargs, conditional=conditional)
+        qlen = len(node.qargs)
+        flow_layer.set_qubit(node.qargs[0], FlowOnQuWireTop(label=label, wire_label=""))
+        for i in range(qlen - 1):
+            flow_layer.set_qubit(
+                node.qargs[i + 1],
+                FlowOnQuWireMid(label=label, input_length=qlen, order=i, wire_label=""),
+            )
+        flow_layer.set_qubit(
+            node.qargs[qlen - 1],
+            FlowOnQuWireBot(
+                label=label,
+                input_length=qlen,
+                conditional=conditional,
+                wire_label="",
+            ),
+        )
+        if conditional:
+            if isinstance(node.op, SwitchCaseOp):
+                if isinstance(node.op.target, Clbit):
+                    condition = (node.op.target, 1)
+                else:
+                    condition = (node.op.target, 2 ** (node.op.target.size) - 1)
+            else:
+                condition = node.op.condition
+            current_cons_cond = flow_layer.set_cl_multibox(condition, top_connect="╨")
+            conditional = True
 
         return flow_layer
 
@@ -1240,10 +1344,11 @@ class TextDrawing:
 class Layer:
     """A layer is the "column" of the circuit."""
 
-    def __init__(self, qubits, clbits, cregbundle, circuit=None):
+    def __init__(self, qubits, clbits, cregbundle, circuit, wire_map):
         self.qubits = qubits
         self.clbits_raw = clbits  # list of clbits ignoring cregbundle change below
         self._circuit = circuit
+        self._wire_map = wire_map
 
         if cregbundle:
             self.clbits = []
@@ -1298,52 +1403,52 @@ class Layer:
     def _set_multibox(
         self,
         label,
-        qubits=None,
-        clbits=None,
+        qargs=None,
+        cargs=None,
         top_connect=None,
         bot_connect=None,
         conditional=False,
         controlled_edge=None,
     ):
-        if qubits is not None and clbits is not None:
-            cbit_index = sorted(i for i, x in enumerate(self.clbits) if x in clbits)
-            qbit_index = sorted(i for i, x in enumerate(self.qubits) if x in qubits)
+        if qargs is not None and cargs is not None:
+            qarg_indices = sorted(i for i, x in enumerate(self.qubits) if x in qargs)
+            carg_indices = sorted(i for i, x in enumerate(self.clbits) if x in cargs)
 
             # Further below, indices are used as wire labels. Here, get the length of
             # the longest label, and pad all labels with spaces to this length.
-            wire_label_len = max(len(str(len(qubits) - 1)), len(str(len(clbits) - 1)))
-            qargs = [
-                str(qubits.index(qbit)).ljust(wire_label_len, " ")
+            wire_label_len = max(len(str(len(qargs) - 1)), len(str(len(cargs) - 1)))
+            qargs_str = [
+                str(qargs.index(qbit)).ljust(wire_label_len, " ")
                 for qbit in self.qubits
-                if qbit in qubits
+                if qbit in qargs
             ]
-            cargs = [
-                str(clbits.index(cbit)).ljust(wire_label_len, " ")
+            cargs_str = [
+                str(cargs.index(cbit)).ljust(wire_label_len, " ")
                 for cbit in self.clbits
-                if cbit in clbits
+                if cbit in cargs
             ]
 
-            qubits = sorted(qubits, key=self.qubits.index)
-            clbits = sorted(clbits, key=self.clbits.index)
+            qargs = sorted(qargs, key=self.qubits.index)
+            cargs = sorted(cargs, key=self.clbits.index)
 
-            box_height = len(self.qubits) - min(qbit_index) + max(cbit_index) + 1
+            box_height = len(self.qubits) - min(qarg_indices) + max(carg_indices) + 1
 
-            self.set_qubit(qubits.pop(0), BoxOnQuWireTop(label, wire_label=qargs.pop(0)))
+            self.set_qubit(qargs.pop(0), BoxOnQuWireTop(label, wire_label=qargs_str.pop(0)))
             order = 0
-            for order, bit_i in enumerate(range(min(qbit_index) + 1, len(self.qubits))):
-                if bit_i in qbit_index:
-                    named_bit = qubits.pop(0)
-                    wire_label = qargs.pop(0)
+            for order, bit_i in enumerate(range(min(qarg_indices) + 1, len(self.qubits))):
+                if bit_i in qarg_indices:
+                    named_bit = qargs.pop(0)
+                    wire_label = qargs_str.pop(0)
                 else:
                     named_bit = self.qubits[bit_i]
                     wire_label = " " * wire_label_len
                 self.set_qubit(
                     named_bit, BoxOnQuWireMid(label, box_height, order, wire_label=wire_label)
                 )
-            for order, bit_i in enumerate(range(max(cbit_index)), order + 1):
-                if bit_i in cbit_index:
-                    named_bit = clbits.pop(0)
-                    wire_label = cargs.pop(0)
+            for order, bit_i in enumerate(range(max(carg_indices)), order + 1):
+                if bit_i in carg_indices:
+                    named_bit = cargs.pop(0)
+                    wire_label = cargs_str.pop(0)
                 else:
                     named_bit = self.clbits[bit_i]
                     wire_label = " " * wire_label_len
@@ -1351,25 +1456,27 @@ class Layer:
                     named_bit, BoxOnClWireMid(label, box_height, order, wire_label=wire_label)
                 )
             self.set_clbit(
-                clbits.pop(0), BoxOnClWireBot(label, box_height, wire_label=cargs.pop(0))
+                cargs.pop(0), BoxOnClWireBot(label, box_height, wire_label=cargs_str.pop(0))
             )
-            return cbit_index
-        if qubits is None and clbits is not None:
-            bits = list(clbits)
-            bit_index = sorted(i for i, x in enumerate(self.clbits) if x in bits)
+            return carg_indices
+
+        if qargs is None and cargs is not None:
+            bits = list(cargs)
+            bit_indices = sorted(i for i, x in enumerate(self.clbits) if x in bits)
             wire_label_len = len(str(len(bits) - 1))
             bits.sort(key=self.clbits.index)
-            qargs = [""] * len(bits)
+            qargs_str = [""] * len(bits)
             set_bit = self.set_clbit
             OnWire = BoxOnClWire
             OnWireTop = BoxOnClWireTop
             OnWireMid = BoxOnClWireMid
             OnWireBot = BoxOnClWireBot
-        elif clbits is None and qubits is not None:
-            bits = list(qubits)
-            bit_index = sorted(i for i, x in enumerate(self.qubits) if x in bits)
+
+        elif cargs is None and qargs is not None:
+            bits = list(qargs)
+            bit_indices = sorted(i for i, x in enumerate(self.qubits) if x in bits)
             wire_label_len = len(str(len(bits) - 1))
-            qargs = [
+            qargs_str = [
                 str(bits.index(qbit)).ljust(wire_label_len, " ")
                 for qbit in self.qubits
                 if qbit in bits
@@ -1389,15 +1496,17 @@ class Layer:
                 for qubit_in_edge, value in controlled_edge:
                     if qubit == qubit_in_edge:
                         control_index[index] = "■" if value == "1" else "o"
-        if len(bit_index) == 1:
+        if len(bit_indices) == 1:
             set_bit(bits[0], OnWire(label, top_connect=top_connect))
         else:
-            box_height = max(bit_index) - min(bit_index) + 1
-            set_bit(bits.pop(0), OnWireTop(label, top_connect=top_connect, wire_label=qargs.pop(0)))
-            for order, bit_i in enumerate(range(min(bit_index) + 1, max(bit_index))):
-                if bit_i in bit_index:
+            box_height = max(bit_indices) - min(bit_indices) + 1
+            set_bit(
+                bits.pop(0), OnWireTop(label, top_connect=top_connect, wire_label=qargs_str.pop(0))
+            )
+            for order, bit_i in enumerate(range(min(bit_indices) + 1, max(bit_indices))):
+                if bit_i in bit_indices:
                     named_bit = bits.pop(0)
-                    wire_label = qargs.pop(0)
+                    wire_label = qargs_str.pop(0)
                 else:
                     named_bit = (self.qubits + self.clbits)[bit_i]
                     wire_label = " " * wire_label_len
@@ -1415,11 +1524,11 @@ class Layer:
                     label,
                     box_height,
                     bot_connect=bot_connect,
-                    wire_label=qargs.pop(0),
+                    wire_label=qargs_str.pop(0),
                     conditional=conditional,
                 ),
             )
-        return bit_index
+        return bit_indices
 
     def set_cl_multibox(self, condition, top_connect="┴"):
         """Sets the multi clbit box.
@@ -1525,7 +1634,7 @@ class Layer:
         """
         return self._set_multibox(
             label,
-            qubits=bits,
+            qargs=bits,
             top_connect=top_connect,
             bot_connect=bot_connect,
             conditional=conditional,
