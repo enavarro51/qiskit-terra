@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 """
-Given a template and a circuit: it applies template matching and substitutes
+Given a template and a circuit: Apply template matching and substitute
 all compatible maximal matches that reduces the size of the circuit.
 
 **Reference:**
@@ -55,24 +55,24 @@ class TemplateOptimization(TransformationPass):
             template_list (list[QuantumCircuit()]): list of the different template circuit to apply.
             heuristics_backward_param (list[int]): [length, survivor] Those are the parameters for
                 applying heuristics on the backward part of the algorithm. This part of the
-                algorithm creates a tree of matching scenario. This tree grows exponentially. The
+                algorithm creates a tree of matching scenarios. This tree grows exponentially. The
                 heuristics evaluate which scenarios have the longest match and keep only those.
                 The length is the interval in the tree for cutting it and survivor is the number
-                of scenarios that are kept. We advise to use l=3 and s=1 to have serious time
+                of scenarios that are kept. We advise to use l=3 and s=1 to have a serious time
                 advantage. We remind that the heuristics implies losing a part of the maximal
                 matches. Check reference for more details.
             heuristics_qubits_param (list[int]): [length] The heuristics for the qubit choice make
                 guesses from the dag dependency of the circuit in order to limit the number of
-                qubit configurations to explore. The length is the number of successors or not
-                predecessors that will be explored in the dag dependency of the circuit, each
-                qubits of the nodes are added to the set of authorized qubits. We advise to use
+                qubit configurations to explore. The length is the number of descendants or not
+                ancestors that will be explored in the dag dependency of the circuit, each
+                qubit of the nodes are added to the set of authorized qubits. We advise to use
                 length=1. Check reference for more details.
             user_cost_dict (Dict[str, int]): quantum cost dictionary passed to TemplateSubstitution
                 to configure its behavior. This will override any default values if None
                 is not given. The key is the name of the gate and the value its quantum cost.
         """
         super().__init__()
-        # If no template is given; the template are set as x-x, cx-cx, ccx-ccx.
+        # If no template is given; the templates are set as x-x, cx-cx, ccx-ccx.
         if template_list is None:
             template_list = [template_nct_2a_1(), template_nct_2a_2(), template_nct_2a_3()]
         self.template_list = template_list
@@ -92,8 +92,8 @@ class TemplateOptimization(TransformationPass):
         Returns:
             DAGCircuit: optimized DAG circuit.
         Raises:
-            TranspilerError: If the template has not the right form or
-             if the output circuit acts differently as the input circuit.
+            TranspilerError: If the template does not have the right form or
+            if the output circuit acts differently from the input circuit.
         """
         from qiskit.dagcircuit.dagdependency_v2 import DAGDependencyV2
 

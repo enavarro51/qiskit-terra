@@ -11,9 +11,10 @@
 # that they have been altered from the originals.
 
 """
-Template matching in the forward direction, it takes an initial
-match, a configuration of qubit and both circuit and template as inputs. The
-result is a list of match between the template and the circuit.
+Template matching in the forward direction. It takes an initial
+match, a configuration of qubit, clbits, and DAG dependencies for both circuit
+and template as inputs. The result is a list of matches between the
+template and the circuit.
 
 
 **Reference:**
@@ -38,8 +39,8 @@ class ForwardMatch:
         """
         Create a ForwardMatch class with necessary arguments.
         Args:
-            circuit_dag_dep (DAGDependency): circuit in the dag dependency form.
-            template_dag_dep (DAGDependency): template in the dag dependency form.
+            circuit_dag_dep (DAGDependencyV2): circuit in the dag dependency form.
+            template_dag_dep (DAGDependencyV2): template in the dag dependency form.
             node_id_c (int): index of the first gate matched in the circuit.
             node_id_t (int): index of the first gate matched in the template.
             qubits (list): list of considered qubits in the circuit.
@@ -52,10 +53,10 @@ class ForwardMatch:
         # The dag dependency representation of the template
         self.template_dag_dep = template_dag_dep
 
-        # List of qubit on which the node of the circuit is acting on
+        # List of circuit qubits
         self.qubits = qubits
 
-        # List of qubit on which the node of the circuit is acting on
+        # List of circuit clbits
         self.clbits = clbits if clbits is not None else []
 
         # Id of the node in the circuit
@@ -64,13 +65,13 @@ class ForwardMatch:
         # Id of the node in the template
         self.node_id_t = node_id_t
 
-        # List of match
+        # List of matches
         self.match = []
 
         # List of candidates for the forward match
         self.candidates = []
 
-        # List of nodes in circuit which are matched
+        # List of nodes in the circuit which are matched
         self.matched_nodes_list = []
 
         # Transformation of the qarg indices of the circuit to be adapted to the template indices
@@ -85,7 +86,7 @@ class ForwardMatch:
 
     def _init_successors_to_visit(self):
         """
-        Initialize the attribute list 'SuccessorsToVisit'
+        Initialize the attribute list successorstovisit
         """
         for i in range(0, self.circuit_dag_dep.size()):
             if i == self.node_id_c:
@@ -95,7 +96,7 @@ class ForwardMatch:
 
     def _init_matched_with(self):
         """
-        Initialize the attribute 'MatchedWith' in the template DAG dependency.
+        Initialize the attribute matchedwith.
         """
         for i in range(0, self.circuit_dag_dep.size()):
             if i == self.node_id_c:
@@ -111,7 +112,7 @@ class ForwardMatch:
 
     def _init_is_blocked(self):
         """
-        Initialize the attribute 'IsBlocked' in the circuit and template DAG dependency's.
+        Initialize the attribute isblocked.
         """
         self.isblocked = {
             self.circuit_dag_dep.get_node(i): False for i in range(0, self.circuit_dag_dep.size())
@@ -132,7 +133,7 @@ class ForwardMatch:
 
     def _init_matched_nodes(self):
         """
-        Initialize the list of current matched nodes.
+        Initialize the list of current matched nodes in the circuit as [[id, node]]
         """
         self.matched_nodes_list.append(
             [self.node_id_c, self.circuit_dag_dep.get_node(self.node_id_c)]
@@ -166,18 +167,19 @@ class ForwardMatch:
         for node_id in pred:
             for succ in self.template_dag_dep.get_successors(node_id):
                 if succ not in matches:
-                    descs = self.template_dag_dep.get_descendants(succ)
-                    block = block + descs
+                    block = block + self.template_dag_dep.get_descendants(succ)
         self.candidates = list(set(set(node_id_t_succs) - set(matches) - set(block)))
 
     def _get_node_forward(self, list_id):
         """
-        Return a node from the matched_node_list for a given list id.
+        Return a node from the matched_node_list for a given list id and remove
+        it from the list.
         Args:
             list_id (int): considered list id of the desired node.
 
         Returns:
-            DAGOpNode: DAGOpNode object corresponding to i-th node of the matched_node_list.
+            DAGOpNode: DAGOpNode object corresponding to the list_id-th node of
+            the matched_node_list.
         """
         return self.matched_nodes_list.pop(list_id)[1]
 
@@ -185,7 +187,7 @@ class ForwardMatch:
         """
         Return the successor for a given node and id and remove the successor
         Args:
-            node (DAGOpNode or DAGOutNode): current node.
+            node (DAGOpNode): current node.
             list_id (int): id in the list for the successor to get.
 
         Returns:
@@ -195,10 +197,10 @@ class ForwardMatch:
 
     def _update_qarg_indices(self, qarg):
         """
-        Change qubits indices of the current circuit node in order to
+        Change qubit indices of the current circuit node in order to
         be comparable with the indices of the template qubits list.
         Args:
-            qarg (list): list of qubits indices from the circuit for a given node.
+            qarg (list): list of qubit indices from the circuit for a given node.
         """
         self.qarg_indices = []
         for q in qarg:
@@ -209,10 +211,10 @@ class ForwardMatch:
 
     def _update_carg_indices(self, carg):
         """
-        Change clbits indices of the current circuit node in order to
+        Change clbit indices of the current circuit node in order to
         be comparable with the indices of the template qubits list.
         Args:
-            carg (list): list of clbits indices from the circuit for a given node.
+            carg (list): list of clbit indices from the circuit for a given node.
         """
         self.carg_indices = []
         if carg:
@@ -242,47 +244,28 @@ class ForwardMatch:
         Returns:
             bool: True if possible, False otherwise.
         """
-
+        temp_qinds = self.template_dag_dep.qindices_map[node_template]
         if isinstance(node_circuit.op, ControlledGate):
-
             c_template = node_template.op.num_ctrl_qubits
-
             if c_template == 1:
-                return self.qarg_indices == self.template_dag_dep.qindices_map[node_template]
-
+                return set(self.qarg_indices) == set(temp_qinds)
             else:
-                control_qubits_template = self.template_dag_dep.qindices_map[node_template][
+                control_qubits_template = temp_qinds[
                     :c_template
                 ]
                 control_qubits_circuit = self.qarg_indices[:c_template]
 
                 if set(control_qubits_circuit) == set(control_qubits_template):
-
-                    target_qubits_template = self.template_dag_dep.qindices_map[node_template][
+                    target_qubits_template = temp_qinds[
                         c_template::
                     ]
                     target_qubits_circuit = self.qarg_indices[c_template::]
 
-                    if node_template.op.base_gate.name in [
-                        "rxx",
-                        "ryy",
-                        "rzz",
-                        "swap",
-                        "iswap",
-                        "ms",
-                    ]:
-                        return set(target_qubits_template) == set(target_qubits_circuit)
-                    else:
-                        return target_qubits_template == target_qubits_circuit
+                    return set(target_qubits_template) == set(target_qubits_circuit)
                 else:
                     return False
         else:
-            if node_template.op.name in ["rxx", "ryy", "rzz", "swap", "iswap", "ms"]:
-                return set(self.qarg_indices) == set(
-                    self.template_dag_dep.qindices_map[node_template]
-                )
-            else:
-                return self.qarg_indices == self.template_dag_dep.qindices_map[node_template]
+            return set(self.qarg_indices) == set(temp_qinds)
 
     def _is_same_c_conf(self, node_circuit, node_template):
         """
@@ -311,7 +294,7 @@ class ForwardMatch:
         and a circuit qubits configuration.
         """
 
-        # Initialize the new attributes of the DAGOpNodes of the DAGDependency object
+        # Initialize the attributes of the ForwardMatch class
         self._init_successors_to_visit()
         self._init_matched_with()
         self._init_is_blocked()
@@ -323,10 +306,9 @@ class ForwardMatch:
         # While the list of matched nodes is not empty
         while self.matched_nodes_list:
 
-            # Return first element of the matched_nodes_list and removes it from the list
+            # Return first element of the matched_nodes_list and remove it from the list
             v_first = self._get_node_forward(0)
 
-            # If there is no successors to visit go to the end
             if not self.successorstovisit[v_first]:
                 continue
 
@@ -334,11 +316,10 @@ class ForwardMatch:
             label = self._get_successor_to_visit(v_first, 0)
             v = [label, self.circuit_dag_dep.get_node(label)]
 
-            # Update the matched_nodes_list with new attribute successor to visit and sort the list.
+            # Update the matched_nodes_list with new node and sort the list.
             self.matched_nodes_list.append([self.circuit_dag_dep.node_map[v_first], v_first])
 
-            # If the node is blocked and already matched go to the end
-            if self.isblocked[v[1]] | (self.matchedwith[v[1]] != []):
+            if self.isblocked[v[1]] or self.matchedwith[v[1]] != []:
                 continue
 
             # Search for potential candidates in the template
@@ -347,7 +328,7 @@ class ForwardMatch:
             qarg1 = self.circuit_dag_dep.qindices_map[self.circuit_dag_dep.get_node(label)]
             carg1 = self.circuit_dag_dep.cindices_map[self.circuit_dag_dep.get_node(label)]
 
-            # Update the indices for both qubits and clbits in order to be comparable with  the
+            # Update the indices for both qubits and clbits in order to be comparable with the
             # indices in the template circuit.
             self._update_qarg_indices(qarg1)
             self._update_carg_indices(carg1)
@@ -356,21 +337,19 @@ class ForwardMatch:
 
             # For loop over the candidates (template) to find a match.
             for i in self.candidates:
-
-                # Break the for loop if a match is found.
                 if match:
                     break
 
-                # Compare the indices of qubits and the operation,
-                # if True; a match is found
+                # Compare the indices of qubits and the operation, and
+                # if True, a match is found
                 node_circuit = self.circuit_dag_dep.get_node(label)
                 node_template = self.template_dag_dep.get_node(i)
+                temp_qinds = self.template_dag_dep.qindices_map[node_template]
 
                 # Necessary but not sufficient conditions for a match to happen.
                 if (
-                    len(self.qarg_indices) != len(self.template_dag_dep.qindices_map[node_template])
-                    or set(self.qarg_indices)
-                    != set(self.template_dag_dep.qindices_map[node_template])
+                    len(self.qarg_indices) != len(temp_qinds)
+                    or set(self.qarg_indices) != set(temp_qinds)
                     or node_circuit.name != node_template.name
                 ):
                     continue
@@ -382,9 +361,7 @@ class ForwardMatch:
                     and self._is_same_c_conf(node_circuit, node_template)
                     and self._is_same_op(node_circuit, node_template)
                 ):
-
                     self.matchedwith[v[1]] = [i]
-
                     self.matchedwith[self.template_dag_dep.get_node(i)] = [label]
 
                     # Append the new match to the list of matches.
@@ -393,8 +370,9 @@ class ForwardMatch:
                     # Potential successors to visit (circuit) for a given match.
                     potential = self.circuit_dag_dep.get_successors(label)
 
-                    # If the potential successors to visit are blocked or match, it is removed.
-                    for potential_id in potential:
+                    # If a potential successor to visit is blocked or matched, it is removed.
+                    potential_copy = potential.copy()
+                    for potential_id in potential_copy:
                         if self.isblocked[self.circuit_dag_dep.get_node(potential_id)] | (
                             self.matchedwith[self.circuit_dag_dep.get_node(potential_id)] != []
                         ):
@@ -409,18 +387,18 @@ class ForwardMatch:
                     self.matched_nodes_list.append([v[0], v[1]])
                     self.matched_nodes_list.sort(key=lambda x: self.successorstovisit[x[1]])
                     match = True
-                    continue
 
             # If no match is found, block the node and all the successors.
             if not match:
                 self.isblocked[v[1]] = True
                 for desc in self.circuit_dag_dep.get_descendants(v[0]):
-                    self.isblocked[self.circuit_dag_dep.get_node(desc)] = True
-                    if self.matchedwith[self.circuit_dag_dep.get_node(desc)]:
+                    circ_desc_node = self.circuit_dag_dep.get_node(desc)
+                    self.isblocked[circ_desc_node] = True
+                    if self.matchedwith[circ_desc_node]:
                         self.match.remove(
-                            [self.matchedwith[self.circuit_dag_dep.get_node(desc)][0], desc]
+                            [self.matchedwith[circ_desc_node][0], desc]
                         )
-                        match_id = self.matchedwith[self.circuit_dag_dep.get_node(desc)][0]
+                        match_id = self.matchedwith[circ_desc_node][0]
                         self.matchedwith[self.template_dag_dep.get_node(match_id)] = []
-                        self.matchedwith[self.circuit_dag_dep.get_node(desc)] = []
+                        self.matchedwith[circ_desc_node] = []
         return (self.matchedwith, self.isblocked)
