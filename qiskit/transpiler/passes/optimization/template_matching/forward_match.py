@@ -244,28 +244,24 @@ class ForwardMatch:
         Returns:
             bool: True if possible, False otherwise.
         """
-        temp_qinds = self.template_dag_dep.qindices_map[node_template]
+        template_qinds = self.template_dag_dep.qindices_map[node_template]
         if isinstance(node_circuit.op, ControlledGate):
             c_template = node_template.op.num_ctrl_qubits
             if c_template == 1:
-                return set(self.qarg_indices) == set(temp_qinds)
+                return set(self.qarg_indices) == set(template_qinds)
             else:
-                control_qubits_template = temp_qinds[
-                    :c_template
-                ]
+                control_qubits_template = template_qinds[:c_template]
                 control_qubits_circuit = self.qarg_indices[:c_template]
 
                 if set(control_qubits_circuit) == set(control_qubits_template):
-                    target_qubits_template = temp_qinds[
-                        c_template::
-                    ]
+                    target_qubits_template = template_qinds[c_template::]
                     target_qubits_circuit = self.qarg_indices[c_template::]
 
-                    return set(target_qubits_template) == set(target_qubits_circuit)
+                    return target_qubits_template == target_qubits_circuit
                 else:
                     return False
         else:
-            return set(self.qarg_indices) == set(temp_qinds)
+            return self.qarg_indices == template_qinds
 
     def _is_same_c_conf(self, node_circuit, node_template):
         """
@@ -344,12 +340,12 @@ class ForwardMatch:
                 # if True, a match is found
                 node_circuit = self.circuit_dag_dep.get_node(label)
                 node_template = self.template_dag_dep.get_node(i)
-                temp_qinds = self.template_dag_dep.qindices_map[node_template]
+                template_qinds = self.template_dag_dep.qindices_map[node_template]
 
                 # Necessary but not sufficient conditions for a match to happen.
                 if (
-                    len(self.qarg_indices) != len(temp_qinds)
-                    or set(self.qarg_indices) != set(temp_qinds)
+                    len(self.qarg_indices) != len(template_qinds)
+                    or set(self.qarg_indices) != set(template_qinds)
                     or node_circuit.name != node_template.name
                 ):
                     continue
@@ -395,9 +391,7 @@ class ForwardMatch:
                     circ_desc_node = self.circuit_dag_dep.get_node(desc)
                     self.isblocked[circ_desc_node] = True
                     if self.matchedwith[circ_desc_node]:
-                        self.match.remove(
-                            [self.matchedwith[circ_desc_node][0], desc]
-                        )
+                        self.match.remove([self.matchedwith[circ_desc_node][0], desc])
                         match_id = self.matchedwith[circ_desc_node][0]
                         self.matchedwith[self.template_dag_dep.get_node(match_id)] = []
                         self.matchedwith[circ_desc_node] = []
