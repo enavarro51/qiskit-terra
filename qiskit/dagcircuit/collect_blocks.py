@@ -21,15 +21,15 @@ from . import DAGOpNode
 
 class BlockCollector:
     """This class implements various strategies of dividing a DAG (direct acyclic graph)
-    into blocks of nodes that satisfy certain criteria. It works both with the
-    :class:`~qiskit.dagcircuit.DAGCircuit` and
-    :class:`~qiskit.dagcircuit.DAGDependency` representations of a DAG, where
-    DagDependency takes into account commutativity between nodes.
+    into blocks of nodes that satisfy certain criteria. It works with the
+    :class:`~qiskit.dagcircuit.DAGCircuit`, :class:`~qiskit.dagcircuit.DAGDependency`
+    or :class:`~qiskit.dagcircuit.DAGDependencyV2` representations of a DAG, where
+    DagDependency and DAGDependencyV2 take into account commutativity between nodes.
 
-    Collecting nodes from DAGDependency generally leads to more optimal results, but is
-    slower, as it requires to construct a DAGDependency beforehand. Thus, DAGCircuit should
-    be used with lower transpiler settings, and DAGDependency should be used with higher
-    transpiler settings.
+    Collecting nodes from a DAG dependency generally leads to more optimal results,
+    but is slower, as it requires to construct a DAG dependency beforehand. Thus,
+    DAGCircuit should be used with lower transpiler settings, and DAGDependency or
+    DAGDependencyV2 should be used with higher transpiler settings.
 
     In general, there are multiple ways to collect maximal blocks. The approaches used
     here are of the form 'starting from the input nodes of a DAG, greedily collect
@@ -40,7 +40,7 @@ class BlockCollector:
     def __init__(self, dag):
         """
         Args:
-            dag (Union[DAGCircuit, DAGDependency]): The input DAG.
+            dag (Union[DAGCircuit, DAGDependency, DAGDependencyV2]): The input DAG.
 
         Raises:
             DAGCircuitError: the input object is not a DAG.
@@ -278,14 +278,14 @@ def split_block_into_layers(block):
 class BlockCollapser:
     """This class implements various strategies of consolidating blocks of nodes
      in a DAG (direct acyclic graph). It works both with the
-    :class:`~qiskit.dagcircuit.DAGCircuit` and
-    :class:`~qiskit.dagcircuit.DAGDependency` DAG representations.
+    :class:`~qiskit.dagcircuit.DAGCircuit`, :class:`~qiskit.dagcircuit.DAGDependency`
+    or :class:`~qiskit.dagcircuit.DAGDependencyV2` DAG representations.
     """
 
     def __init__(self, dag):
         """
         Args:
-            dag (Union[DAGCircuit, DAGDependency]): The input DAG.
+            dag (Union[DAGCircuit, DAGDependency, DAGDependencyV2]): The input DAG.
         """
 
         self.dag = dag
@@ -340,6 +340,7 @@ class BlockCollapser:
             op = collapse_fn(qc)
 
             # Replace the block of nodes in the DAG by the constructed operation
-            # (the function replace_block_with_op is implemented both in DAGCircuit and DAGDependency).
+            # (the function replace_block_with_op is implemented in DAGCircuit,
+            # DAGDependency and DAGDependencyV2).
             self.dag.replace_block_with_op(block, op, wire_pos_map, cycle_check=False)
         return self.dag

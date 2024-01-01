@@ -15,10 +15,10 @@ from qiskit.circuit import QuantumCircuit, CircuitInstruction
 
 
 def dagdependency_to_circuit(dagdependency):
-    """Build a ``QuantumCircuit`` object from a ``DAGDependency``.
+    """Build a ``QuantumCircuit`` object from a ``DAGDependency`` or ``DAGDependencyV2``.
 
     Args:
-        dagdependency (DAGDependency): the input dag.
+        dagdependency (DAGDependency, DAGDependencyV2): the input dag.
 
     Return:
         QuantumCircuit: the circuit representing the input dag dependency.
