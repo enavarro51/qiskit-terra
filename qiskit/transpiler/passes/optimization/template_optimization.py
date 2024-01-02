@@ -55,7 +55,7 @@ class TemplateOptimization(TransformationPass):
             template_list (list[QuantumCircuit()]): list of the different template circuit to apply.
             heuristics_backward_param (list[int]): [length, survivor] Those are the parameters for
                 applying heuristics on the backward part of the algorithm. This part of the
-                algorithm creates a tree of matching scenario. This tree grows exponentially. The
+                algorithm creates a tree of matching scenarios. This tree grows exponentially. The
                 heuristics evaluate which scenarios have the longest match and keep only those.
                 The length is the interval in the tree for cutting it and survivor is the number
                 of scenarios that are kept. We advise to use l=3 and s=1 to have serious time
@@ -134,9 +134,7 @@ class TemplateOptimization(TransformationPass):
                 self.heuristics_qubits_param,
                 self.heuristics_backward_param,
             )
-
             template_m.run_template_matching()
-
             matches = template_m.match_list
 
             if matches:

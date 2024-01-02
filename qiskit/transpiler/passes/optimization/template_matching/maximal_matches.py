@@ -11,14 +11,14 @@
 # that they have been altered from the originals.
 
 """
-It stores all maximal matches from the given matches obtained by the template
+This stores all maximal matches from the given matches obtained by the template
 matching algorithm.
 """
 
 
 class Match:
     """
-    Class Match is an object to store a list of match with its qubits and
+    Class Match is an object to store a list of matches with its qubits and
     clbits configuration.
     """
 
@@ -49,7 +49,6 @@ class MaximalMatches:
             template_matches (list): list of matches obtained from running the algorithm.
         """
         self.template_matches = template_matches
-
         self.max_match_list = []
 
     def run_maximal_matches(self):
@@ -64,7 +63,6 @@ class MaximalMatches:
                 self.template_matches[0].clbit,
             )
         ]
-
         for matches in self.template_matches[1::]:
             present = False
             for max_match in self.max_match_list:
