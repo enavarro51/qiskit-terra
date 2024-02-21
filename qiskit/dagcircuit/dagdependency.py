@@ -465,7 +465,7 @@ class DAGDependency:
                     # If prev_node and max_node do not commute, then we add an edge
                     # between the two, and mark all direct predecessors of prev_node
                     # as not reaching max_node.
-                    self._multi_graph.add_edge(prev_node_id, max_node_id, {"commute": False})
+                    self._multi_graph.add_edge(prev_node_id, max_node_id, ())
 
                     predecessor_ids = self._multi_graph.predecessor_indices(prev_node_id)
                     for predecessor_id in predecessor_ids:
