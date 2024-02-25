@@ -328,23 +328,47 @@ class DAGDependencyV2:
                 f"Could not locate provided bit: {bit}. Has it been added to the DAGDependency?"
             ) from err
 
-    def apply_operation_back(self, operation, qargs=(), cargs=()):
-        """Add a DAGOpNode to the graph and update the edges.
+    # def apply_operation_back(self, operation, qargs=(), cargs=()):
+    #     """Add a DAGOpNode to the graph and update the edges.
 
-        Args:
-            operation (qiskit.circuit.Operation): operation as a quantum gate
-            qargs (list[~qiskit.circuit.Qubit]): list of qubits on which the operation acts
-            cargs (list[Clbit]): list of classical wires to attach to
-        """
-        new_node = DAGOpNode(
-            op=operation,
-            qargs=qargs,
-            cargs=cargs,
-            dag=self,
-        )
+    #     Args:
+    #         operation (qiskit.circuit.Operation): operation as a quantum gate
+    #         qargs (list[~qiskit.circuit.Qubit]): list of qubits on which the operation acts
+    #         cargs (list[Clbit]): list of classical wires to attach to
+    #     """
+    #     new_node = DAGOpNode(
+    #         op=operation,
+    #         qargs=qargs,
+    #         cargs=cargs,
+    #         dag=self,
+    #     )
+    #     new_node._node_id = self._multi_graph.add_node(new_node)
+    #     self._update_edges(new_node)
+    #     self._increment_op(new_node.op)
+
+    def apply_operation_back(self, operation, qargs=(), cargs=()):
+        # Build the sorter before adding the new node as a cheeky way to needing to skip it in the
+        # topological order.
+        order = rx.TopologicalSorter(self._multi_graph, check_cycle=False, reverse=True)
+
+        new_node = DAGOpNode(op=operation, qargs=qargs, cargs=cargs, dag=self)
         new_node._node_id = self._multi_graph.add_node(new_node)
-        self._update_edges(new_node)
         self._increment_op(new_node.op)
+
+        while available := order.get_ready():
+            for prev_node_id in available:
+                prev_node = self._multi_graph[prev_node_id]
+                if self.comm_checker.commute(
+                    prev_node.op,
+                    prev_node.qargs,
+                    prev_node.cargs,
+                    new_node.op,
+                    new_node.qargs,
+                    new_node.cargs,
+                ):
+                    order.done([prev_node_id])
+                else:
+                    self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
 
     def _update_edges(self, new_node):
         """
