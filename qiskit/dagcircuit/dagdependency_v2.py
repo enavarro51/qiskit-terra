@@ -30,7 +30,9 @@ from qiskit.circuit import (
 )
 from qiskit.circuit.controlflow import condition_resources
 from qiskit.circuit.bit import Bit
-from qiskit.dagcircuit.dagnode import DAGOpNode
+from qiskit.circuit import Qubit
+from qiskit.circuit.library import IGate
+from qiskit.dagcircuit.dagnode import DAGOpNode, DAGOutNode
 from qiskit.dagcircuit.exceptions import DAGDependencyError
 from qiskit.circuit.commutation_library import SessionCommutationChecker as scc
 
@@ -114,6 +116,10 @@ class DAGDependencyV2:
         self.unit = "dt"
 
         self.comm_checker = scc
+
+        # node = DAGOpNode(XGate(), [Qubit()], [], dag=self)
+        # self.drain_node = self._multi_graph.get_node_data(self._multi_graph.add_node(node))
+        # print(self.drain_node)
 
     @property
     def global_phase(self):
@@ -249,6 +255,10 @@ class DAGDependencyV2:
             self.qubits.append(qubit)
             self._qubit_indices[qubit] = BitLocations(len(self.qubits) - 1, [])
 
+            if len(self.qubits) == 1:
+                self.drain_node = DAGOpNode(IGate(), [qubits[0]], [], dag=self)
+                self.drain_node._node_id = self._multi_graph.add_node(self.drain_node)
+
     def add_clbits(self, clbits):
         """Add individual clbit wires."""
         if any(not isinstance(clbit, Clbit) for clbit in clbits):
@@ -353,22 +363,40 @@ class DAGDependencyV2:
 
         new_node = DAGOpNode(op=operation, qargs=qargs, cargs=cargs, dag=self)
         new_node._node_id = self._multi_graph.add_node(new_node)
+        # print("new node", new_node._node_id)
+        self._multi_graph.add_edge(new_node._node_id, self.drain_node._node_id, None)
         self._increment_op(new_node.op)
 
         while available := order.get_ready():
+            preds = self._multi_graph.predecessor_indices(self.drain_node._node_id)
+            # print("avail", available)
             for prev_node_id in available:
+                if prev_node_id not in preds:
+                    order.done([prev_node_id])
+                    continue
                 prev_node = self._multi_graph[prev_node_id]
-                if self.comm_checker.commute(
-                    prev_node.op,
-                    prev_node.qargs,
-                    prev_node.cargs,
-                    new_node.op,
-                    new_node.qargs,
-                    new_node.cargs,
+                if (
+                    prev_node_id == self.drain_node._node_id
+                    or prev_node_id == new_node._node_id
+                    or self.comm_checker.commute(
+                        prev_node.op,
+                        prev_node.qargs,
+                        prev_node.cargs,
+                        new_node.op,
+                        new_node.qargs,
+                        new_node.cargs,
+                    )
                 ):
+                    # print("commute new prev", new_node._node_id, prev_node_id)
                     order.done([prev_node_id])
                 else:
-                    self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
+                    # print("no commute new prev", new_node._node_id, prev_node_id)
+                    # print([nd._node_id for nd in self._multi_graph.predecessors(self.drain_node._node_id) if nd._node_id != new_node._node_id])
+                    if self._multi_graph.has_edge(prev_node_id, self.drain_node._node_id):
+                        self._multi_graph.remove_edge(prev_node_id, self.drain_node._node_id)
+                        self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
+                    else:
+                        self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
 
     def _update_edges(self, new_node):
         """
@@ -491,7 +519,8 @@ class DAGDependencyV2:
         Returns:
             generator(DAGOpNode): nodes in topological order.
         """
-        return self.topological_nodes(key)
+        # return self.topological_nodes(key)
+        return (nd for nd in self.topological_nodes(key) if isinstance(nd, DAGOpNode))
 
     def successors(self, node):
         """Returns iterator of the successors of a node as DAGOpNodes."""
