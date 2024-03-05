@@ -16,6 +16,7 @@
 import math
 from collections import OrderedDict, defaultdict, namedtuple
 from typing import Dict, List, Generator, Any
+import copy
 
 import numpy as np
 import rustworkx as rx
@@ -356,6 +357,50 @@ class DAGDependencyV2:
     #     self._update_edges(new_node)
     #     self._increment_op(new_node.op)
 
+    # def apply_operation_back(self, operation, qargs=(), cargs=()):
+    #     # Build the sorter before adding the new node as a cheeky way to needing to skip it in the
+    #     # topological order.
+    #     #order = rx.TopologicalSorter(self._multi_graph, check_cycle=False, reverse=True)
+
+    #     new_node = DAGOpNode(op=operation, qargs=qargs, cargs=cargs, dag=self)
+    #     new_node._node_id = self._multi_graph.add_node(new_node)
+    #     # print("new node", new_node._node_id)
+    #     self._increment_op(new_node.op)
+
+    #     #while available := order.get_ready():
+    #     preds = copy.copy(self._multi_graph.predecessor_indices(self.drain_node._node_id))
+    #     self._multi_graph.add_edge(new_node._node_id, self.drain_node._node_id, None)
+    #         # print("avail", available)
+    #     print("preds", preds)
+    #     for prev_node_id in reversed(preds):#self._multi_graph.predecessor_indices(self.drain_node._node_id)):
+    #         # if prev_node_id not in preds:
+    #         #     order.done([prev_node_id])
+    #         #     continue
+    #         prev_node = self._multi_graph[prev_node_id]
+    #         print("new prev", new_node._node_id, prev_node_id)
+    #         if not (
+    #             #prev_node_id == self.drain_node._node_id
+    #             #prev_node_id == new_node._node_id
+    #             self.comm_checker.commute(
+    #                 prev_node.op,
+    #                 prev_node.qargs,
+    #                 prev_node.cargs,
+    #                 new_node.op,
+    #                 new_node.qargs,
+    #                 new_node.cargs,
+    #             )
+    #         ):
+    #         #     # print("commute new prev", new_node._node_id, prev_node_id)
+    #         #     #order.done([prev_node_id])
+    #         # else:
+    #             print("no commute new prev", new_node._node_id, prev_node_id)
+    #             # print([nd._node_id for nd in self._multi_graph.predecessors(self.drain_node._node_id) if nd._node_id != new_node._node_id])
+    #             #if self._multi_graph.has_edge(prev_node_id, self.drain_node._node_id):
+    #             self._multi_graph.remove_edge(prev_node_id, self.drain_node._node_id)
+    #             self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
+    #             #else:
+    #             #    self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
+
     def apply_operation_back(self, operation, qargs=(), cargs=()):
         # Build the sorter before adding the new node as a cheeky way to needing to skip it in the
         # topological order.
@@ -363,21 +408,15 @@ class DAGDependencyV2:
 
         new_node = DAGOpNode(op=operation, qargs=qargs, cargs=cargs, dag=self)
         new_node._node_id = self._multi_graph.add_node(new_node)
-        # print("new node", new_node._node_id)
+
         self._multi_graph.add_edge(new_node._node_id, self.drain_node._node_id, None)
         self._increment_op(new_node.op)
 
         while available := order.get_ready():
-            preds = self._multi_graph.predecessor_indices(self.drain_node._node_id)
-            # print("avail", available)
             for prev_node_id in available:
-                if prev_node_id not in preds:
-                    order.done([prev_node_id])
-                    continue
                 prev_node = self._multi_graph[prev_node_id]
                 if (
                     prev_node_id == self.drain_node._node_id
-                    or prev_node_id == new_node._node_id
                     or self.comm_checker.commute(
                         prev_node.op,
                         prev_node.qargs,
@@ -387,16 +426,11 @@ class DAGDependencyV2:
                         new_node.cargs,
                     )
                 ):
-                    # print("commute new prev", new_node._node_id, prev_node_id)
                     order.done([prev_node_id])
                 else:
-                    # print("no commute new prev", new_node._node_id, prev_node_id)
-                    # print([nd._node_id for nd in self._multi_graph.predecessors(self.drain_node._node_id) if nd._node_id != new_node._node_id])
                     if self._multi_graph.has_edge(prev_node_id, self.drain_node._node_id):
                         self._multi_graph.remove_edge(prev_node_id, self.drain_node._node_id)
-                        self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
-                    else:
-                        self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
+                    self._multi_graph.add_edge(prev_node_id, new_node._node_id, None)
 
     def _update_edges(self, new_node):
         """
