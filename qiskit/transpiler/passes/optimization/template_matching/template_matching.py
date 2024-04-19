@@ -199,14 +199,14 @@ class TemplateMatching:
         """
         template_nodes = range(node_id_t + 1, self.template_dag_dep.size())
         circuit_nodes = range(0, self.circuit_dag_dep.size())
-        successors_template = self.template_dag_dep._multi_graph[node_id_t].successors
+        successors_template = self.template_dag_dep.get_node(node_id_t).successors
 
         counter = 1
-        qubit_set = set(self.circuit_dag_dep._multi_graph[node_id_c].qindices)
+        qubit_set = set(self.circuit_dag_dep.get_node(node_id_c).qindices)
         if 2 * len(successors_template) > len(template_nodes):
-            successors = self.circuit_dag_dep._multi_graph[node_id_c].successors
+            successors = self.circuit_dag_dep.get_node(node_id_c).successors
             for succ in successors:
-                qarg = self.circuit_dag_dep._multi_graph[succ].qindices
+                qarg = self.circuit_dag_dep.get_node(succ).qindices
                 if (len(qubit_set | set(qarg))) <= n_qubits_t and counter <= length:
                     qubit_set = qubit_set | set(qarg)
                     counter += 1
@@ -216,7 +216,7 @@ class TemplateMatching:
 
         else:
             not_successors = list(
-                set(circuit_nodes) - set(self.circuit_dag_dep._multi_graph[node_id_c].successors)
+                set(circuit_nodes) - set(self.circuit_dag_dep.get_node(node_id_c).successors)
             )
             candidate = [
                 not_successors[j]
@@ -224,7 +224,7 @@ class TemplateMatching:
             ]
 
             for not_succ in candidate:
-                qarg = self.circuit_dag_dep._multi_graph[not_succ].qindices
+                qarg = self.circuit_dag_dep.get_node(not_succ).qindices
                 if counter <= length and (len(qubit_set | set(qarg))) <= n_qubits_t:
                     qubit_set = qubit_set | set(qarg)
                     counter += 1
@@ -253,15 +253,15 @@ class TemplateMatching:
         for template_index in range(0, self.template_dag_dep.size()):
             for circuit_index in range(0, self.circuit_dag_dep.size()):
                 # Operations match up to ParameterExpressions.
-                if self.circuit_dag_dep._multi_graph[circuit_index].op.soft_compare(
-                    self.template_dag_dep._multi_graph[template_index].op
+                if self.circuit_dag_dep.get_node(circuit_index).op.soft_compare(
+                    self.template_dag_dep.get_node(template_index).op
                 ):
 
-                    qarg_c = [self.circuit_dag_dep.find_bit(qarg).index for qarg in self.circuit_dag_dep._multi_graph[circuit_index].qargs]
-                    carg_c = [self.circuit_dag_dep.find_bit(carg).index for carg in self.circuit_dag_dep._multi_graph[circuit_index].cargs]
+                    qarg_c = self.circuit_dag_dep.get_node(circuit_index).qindices
+                    carg_c = self.circuit_dag_dep.get_node(circuit_index).cindices
 
-                    qarg_t = [self.template_dag_dep.find_bit(qarg).index for qarg in self.template_dag_dep._multi_graph[circuit_index].qargs]
-                    carg_t = [self.template_dag_dep.find_bit(carg).index for carg in self.template_dag_dep._multi_graph[circuit_index].cargs]
+                    qarg_t = self.template_dag_dep.get_node(template_index).qindices
+                    carg_t = self.template_dag_dep.get_node(template_index).cindices
 
                     node_id_c = circuit_index
                     node_id_t = template_index
@@ -269,8 +269,8 @@ class TemplateMatching:
                     # Fix the qubits and clbits configuration given the first match.
 
                     all_list_first_match_q, list_first_match_c = self._list_first_match_new(
-                        self.circuit_dag_dep._multi_graph[circuit_index],
-                        self.template_dag_dep._multi_graph[template_index],
+                        self.circuit_dag_dep.get_node(circuit_index),
+                        self.template_dag_dep.get_node(template_index),
                         n_qubits_t,
                         n_clbits_t,
                     )

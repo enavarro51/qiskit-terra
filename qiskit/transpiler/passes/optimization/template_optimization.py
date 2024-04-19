@@ -24,10 +24,9 @@ import numpy as np
 
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.dagcircuit import DAGDependency
-from qiskit.dagcircuit.dagdependency_v2 import _DAGDependencyV2
-from qiskit.converters.circuit_to_dagdependency_v2 import _circuit_to_dagdependency_v2
+from qiskit.converters.circuit_to_dagdependency import circuit_to_dagdependency
 from qiskit.converters.dagdependency_to_circuit import dagdependency_to_circuit
-from qiskit.converters.dag_to_dagdependency_v2 import _dag_to_dagdependency_v2
+from qiskit.converters.dag_to_dagdependency import dag_to_dagdependency
 from qiskit.converters.dagdependency_to_dag import dagdependency_to_dag
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.circuit.library.templates import template_nct_2a_1, template_nct_2a_2, template_nct_2a_3
@@ -98,7 +97,7 @@ class TemplateOptimization(TransformationPass):
              if the output circuit acts differently as the input circuit.
         """
         circuit_dag = dag
-        circuit_dag_dep = _dag_to_dagdependency_v2(circuit_dag)
+        circuit_dag_dep = dag_to_dagdependency(circuit_dag)
 
         for template in self.template_list:
             if not isinstance(template, (QuantumCircuit, DAGDependency)):
@@ -109,7 +108,7 @@ class TemplateOptimization(TransformationPass):
 
             identity = np.identity(2 ** len(template.qubits), dtype=complex)
             try:
-                if isinstance(template, _DAGDependencyV2) or isinstance(template, DAGDependency):
+                if isinstance(template, DAGDependency):
                     data = Operator(dagdependency_to_circuit(template)).data
                 else:
                     data = Operator(template).data
@@ -124,7 +123,7 @@ class TemplateOptimization(TransformationPass):
                 pass
 
             if isinstance(template, QuantumCircuit):
-                template_dag_dep = _circuit_to_dagdependency_v2(template)
+                template_dag_dep = circuit_to_dagdependency(template)
             else:
                 template_dag_dep = template
 
