@@ -79,7 +79,7 @@ class ForwardMatch:
         # Transformation of the carg indices of the circuit to be adapted to the template indices
         self.carg_indices = []
 
-        self.successors_to_visit = {}
+        self.successorstovisit = {}
 
         self.matchedwith = {}
 
@@ -91,7 +91,7 @@ class ForwardMatch:
         """
         for i in range(0, self.circuit_dag_dep.size()):
             if i == self.node_id_c:
-                self.successors_to_visit[self.circuit_dag_dep._multi_graph[i]] = self.circuit_dag_dep.successors(self.circuit_dag_dep._multi_graph[i])
+                self.successorstovisit[self.circuit_dag_dep._multi_graph[i]] = list(self.circuit_dag_dep.successors(self.circuit_dag_dep._multi_graph[i]))
 
     def _init_matched_with_circuit(self):
         """
@@ -118,14 +118,14 @@ class ForwardMatch:
         Initialize the attribute 'IsBlocked' in the circuit DAG dependency.
         """
         for i in range(0, self.circuit_dag_dep.size()):
-            get_node(self.circuit_dag_dep, i).isblocked = False
+            self.isblocked[self.circuit_dag_dep._multi_graph[i]] = False
 
     def _init_is_blocked_template(self):
         """
         Initialize the attribute 'IsBlocked' in the template DAG dependency.
         """
         for i in range(0, self.template_dag_dep.size()):
-            get_node(self.circuit_dag_dep, i).isblocked = False
+            self.isblocked[self.template_dag_dep._multi_graph[i]] = False
 
     def _init_list_match(self):
         """
@@ -150,20 +150,20 @@ class ForwardMatch:
             pred.sort()
         pred.remove(node_id_t)
 
-        if self.template_dag_dep.successors(node_id_t):
-            maximal_index = self.template_dag_dep.successors(node_id_t)[-1]
+        if self.template_dag_dep.descendants(node_id_t):
+            maximal_index = self.template_dag_dep.descendants(node_id_t)[-1]
             for elem in pred:
                 if elem > maximal_index:
                     pred.remove(elem)
 
         block = []
         for node_id in pred:
-            for dir_succ in self.template_dag_dep.successors(node_id):
+            for dir_succ in self.template_dag_dep.descendants(node_id):
                 if dir_succ not in matches:
-                    succ = self.template_dag_dep.successors(dir_succ)
+                    succ = self.template_dag_dep.descendants(dir_succ)
                     block = block + succ
         self.candidates = list(
-            set(self.template_dag_dep.successors(node_id_t)) - set(matches) - set(block)
+            set(self.template_dag_dep.descendants(node_id_t)) - set(matches) - set(block)
         )
 
     def _init_matched_nodes(self):
@@ -218,7 +218,7 @@ class ForwardMatch:
         Returns:
             int: id of the successor to get.
         """
-        successor_id = node.successorstovisit[list_id]
+        successor_id = self.successorstovisit[node][list_id]
         return successor_id
 
     def _update_qarg_indices(self, qarg):
@@ -357,12 +357,12 @@ class ForwardMatch:
             self._remove_node_forward(0)
 
             # If there is no successors to visit go to the end
-            if not v_first.successorstovisit:
+            if not self.successorstovisit[v_first]:
                 continue
 
             # Get the label and the node of the first successor to visit
             label = self._get_successors_to_visit(v_first, 0)
-            v = [label, get_node(self.circuit_dag_dep, label)]
+            v = [label._node_id, label]
 
             # Update of the SuccessorsToVisit attribute
             v_first = self._update_successor(v_first, 0)
@@ -428,7 +428,7 @@ class ForwardMatch:
 
                     # If the potential successors to visit are blocked or match, it is removed.
                     for potential_id in potential:
-                        if self.circuit_dag_dep.get_node(potential_id).isblocked | (
+                        if self.isblocked[self.circuit_dag_dep._multi_graph[potential_id]] != [] | (
                             self.matchedwith[self.circuit_dag_dep._multi_graph[potential_id]] != []
                         ):
                             potential.remove(potential_id)
@@ -446,9 +446,9 @@ class ForwardMatch:
 
             # If no match is found, block the node and all the successors.
             if not match:
-                v[1].isblocked = True
+                self.isblocked[v[1]] = True
                 for succ in v[1].successors:
-                    self.circuit_dag_dep.get_node(succ).isblocked = True
+                    self.isblocked[self.circuit_dag_dep[succ]] = True
                     if self.matchedwith[self.circuit_dag_dep._multi_graph[succ]]:
                         self.match.remove(
                             [self.matchedwith[self.circuit_dag_dep._multi_graph[succ]][0], succ]

@@ -192,24 +192,24 @@ class TemplateMatching:
 
     def _explore_circuit(self, node_id_c, node_id_t, n_qubits_t, length):
         """
-        Explore the successors of the node_id_c (up to the given length).
+        Explore the descendants of the node_id_c (up to the given length).
         Args:
             node_id_c (int): first match id in the circuit.
             node_id_t (int): first match id in the template.
             n_qubits_t (int): number of qubits in the template.
-            length (int): length for exploration of the successors.
+            length (int): length for exploration of the descendants.
         Returns:
-            list: qubits configuration for the 'length' successors of node_id_c.
+            list: qubits configuration for the 'length' descendants of node_id_c.
         """
         template_nodes = range(node_id_t + 1, self.template_dag_dep.size())
         circuit_nodes = range(0, self.circuit_dag_dep.size())
-        successors_template = self.template_dag_dep._multi_graph[node_id_t].successors
+        descendants_template = self.template_dag_dep.descendants(self.template_dag_dep._multi_graph[node_id_t])
 
         counter = 1
         qubit_set = set(qindices(self.circuit_dag_dep, self.circuit_dag_dep._multi_graph[node_id_c]))
-        if 2 * len(successors_template) > len(template_nodes):
-            successors = self.circuit_dag_dep._multi_graph[node_id_c].successors
-            for succ in successors:
+        if 2 * len(descendants_template) > len(template_nodes):
+            descendants = self.circuit_dag_dep.descendants(self.circuit_dag_dep._multi_graph[node_id_c])
+            for succ in descendants:
                 qarg = qindices(self.circuit_dag_dep, self.circuit_dag_dep._multi_graph[succ])
                 if (len(qubit_set | set(qarg))) <= n_qubits_t and counter <= length:
                     qubit_set = qubit_set | set(qarg)
@@ -219,12 +219,12 @@ class TemplateMatching:
             return list(qubit_set)
 
         else:
-            not_successors = list(
-                set(circuit_nodes) - set(self.circuit_dag_dep._multi_graph[node_id_c].successors)
+            not_descendants = list(
+                set(circuit_nodes) - set(self.circuit_dag_dep.descendants(self.circuit_dag_dep._multi_graph[node_id_c]))
             )
             candidate = [
-                not_successors[j]
-                for j in range(len(not_successors) - 1, len(not_successors) - 1 - length, -1)
+                not_descendants[j]
+                for j in range(len(not_descendants) - 1, len(not_descendants) - 1 - length, -1)
             ]
 
             for not_succ in candidate:
@@ -283,7 +283,7 @@ class TemplateMatching:
                     list_circuit_c = list(range(0, n_clbits_c))
 
                     # If the parameter for qubits heuristics is given then extracts
-                    # the list of qubits for the successors (length(int)) in the circuit.
+                    # the list of qubits for the descendants (length(int)) in the circuit.
 
                     if self.heuristics_qubits_param:
                         heuristics_qubits = self._explore_circuit(
