@@ -125,6 +125,8 @@ class BackwardMatch:
         qubits,
         clbits=None,
         heuristics_backward_param=None,
+        matchedwith = {},
+        isblocked = {}
     ):
         """
         Create a ForwardMatch class with necessary arguments.
@@ -151,6 +153,8 @@ class BackwardMatch:
             heuristics_backward_param if heuristics_backward_param is not None else []
         )
         self.matching_list = MatchingScenariosList()
+        self.matchedwith = matchedwith
+        self.isblocked = isblocked
 
     def _gate_indices(self):
         """
