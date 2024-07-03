@@ -38,6 +38,8 @@ use pyo3::types::{
 use pyo3::{intern, PyObject, PyResult, PyVisit};
 use rustworkx_core::err::ContractError;
 use rustworkx_core::graph_ext::ContractNodesDirected;
+use rustworkx_core::dag_algo::layers as core_layers;
+use rustworkx_core::dag_algo as core_dag_algo;
 use rustworkx_core::petgraph;
 use rustworkx_core::petgraph::prelude::StableDiGraph;
 use rustworkx_core::petgraph::stable_graph::{DefaultIx, IndexType, Neighbors, NodeIndex};
@@ -3029,10 +3031,18 @@ def _format(operand):
     }
 
     /// Yield layers of the multigraph.
-    fn multigraph_layers(&self) -> PyResult<Py<PyIterator>> {
-        /// first_layer = [x._node_id for x in self.input_map.values()]
-        /// return iter(rx.layers(self._multi_graph, first_layer))
-        todo!()
+    fn multigraph_layers(&self, py: Python) -> PyResult<Py<PyIterator>> {
+        let first_layer = Vec::new();
+        for x in self.input_map {
+            first_layer.push(self.input_map[x]);
+        }
+        // return iter(rx.layers(self._multi_graph, first_layer))
+        let layers = core_dag_algo::layers(self._multi_graph, first_layer);
+        Ok(PyIterator::new_bound(py, layers?)
+            .into_any()
+            .iter()
+            .unwrap()
+            .unbind())
     }
 
     /// Return a set of non-conditional runs of "op" nodes with the given names.
