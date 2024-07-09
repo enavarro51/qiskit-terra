@@ -1178,7 +1178,7 @@ dependencies = [
  "rand_distr",
  "rand_pcg",
  "rayon",
- "rustworkx-core 0.15.1",
+ "rustworkx-core",
  "smallvec",
 ]
 
@@ -1193,7 +1193,7 @@ dependencies = [
  "num-complex",
  "numpy",
  "pyo3",
- "rustworkx-core 0.15.0",
+ "rustworkx-core",
  "smallvec",
 ]
 
@@ -1390,25 +1390,6 @@ name = "rustversion"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80af6f9131f277a45a3fba6ce8e2258037bb0477a67e610d3c1fe046ab31de47"
-
-[[package]]
-name = "rustworkx-core"
-version = "0.15.0"
-source = "git+https://github.com/Qiskit/rustworkx.git#326a4d324218a7d9aea1e84f3b39f3c449113755"
-dependencies = [
- "ahash 0.8.11",
- "fixedbitset",
- "hashbrown 0.14.5",
- "indexmap",
- "ndarray",
- "num-traits",
- "petgraph",
- "priority-queue",
- "rand",
- "rand_pcg",
- "rayon",
- "rayon-cond",
-]
 
 [[package]]
 name = "rustworkx-core"

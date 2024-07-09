@@ -12,7 +12,7 @@ doctest = false
 [dependencies]
 ahash = "0.8.11"
 hashbrown.workspace = true
-rustworkx-core = { git = "https://github.com/Qiskit/rustworkx.git" }
+rustworkx-core = "0.15"
 num-complex.workspace = true
 ndarray.workspace = true
 numpy.workspace = true
