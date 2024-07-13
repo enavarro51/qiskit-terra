@@ -36,9 +36,9 @@ use pyo3::types::{
     PySlice, PyString, PyTuple, PyType,
 };
 use pyo3::{intern, PyObject, PyResult, PyVisit};
+use rustworkx_core::dag_algo::layers as core_layers;
 use rustworkx_core::err::ContractError;
 use rustworkx_core::graph_ext::ContractNodesDirected;
-use rustworkx_core::dag_algo::layers as core_layers;
 use rustworkx_core::petgraph;
 use rustworkx_core::petgraph::prelude::StableDiGraph;
 use rustworkx_core::petgraph::stable_graph::{DefaultIx, IndexType, Neighbors, NodeIndex};
@@ -2964,6 +2964,29 @@ def _format(operand):
     /// layers as this is currently implemented. This may not be
     /// the desired behavior.
     fn layers(&self, py: Python) -> PyResult<Py<PyIterator>> {
+        let first_layer = self
+            .qubit_input_map
+            .values()
+            .map(|node| *node)
+            .collect::<Vec<NodeIndex>>();
+        let graph_layers = core_layers(&self.dag, first_layer)
+            .map(|layer| {
+                let layer1 = layer
+                    .unwrap()
+                    .iter()
+                    // .map(DAGOpNode)
+                    .sort()
+                    // .map(|node| self.get_node(py, *node))
+                    .collect::<PyResult<Vec<_>>>();
+                let new_layer = self.copy_empty_like(py).unwrap();
+                    layer1
+                        .iter()
+                        .map(|node| {
+                            new_layer.apply_operation_back(py, *node.op, *node.qargs, *node.cargs, true)
+                        });
+            })
+            .collect::<PyResult<Vec<_>>>();
+
         // graph_layers = self.multigraph_layers()
         // try:
         //     next(graph_layers)  # Remove input nodes
@@ -3002,7 +3025,7 @@ def _format(operand):
         //
         //     yield {"graph": new_layer, "partition": support_list}
         //todo!()
-        Ok(self.multigraph_layers(py).unwrap())
+        Ok(PyTuple::new_bound(py, ["graph", graph_layers]).into_any().iter()?.unbind())
     }
 
     /// Yield a layer for all gates of this circuit.
@@ -3032,21 +3055,21 @@ def _format(operand):
 
     /// Yield layers of the multigraph.
     fn multigraph_layers(&self, py: Python) -> PyResult<Py<PyIterator>> {
-        let mut first_layer: Vec<NodeIndex> = Vec::new();
-        for index in self.qubit_input_map.values() {
-            first_layer.push(*index);
-        }
+        let first_layer = self
+            .qubit_input_map
+            .values()
+            .map(|node| *node)
+            .collect::<Vec<NodeIndex>>();
         let layers = core_layers(&self.dag, first_layer)
-            .map(|layer| layer
-                .unwrap()
-                .iter()
-                .map(|node| self.get_node(py, *node))
-                .collect::<PyResult<Vec<_>>>())
+            .map(|layer| {
+                layer
+                    .unwrap()
+                    .iter()
+                    .map(|node| self.get_node(py, *node))
+                    .collect::<PyResult<Vec<_>>>()
+            })
             .collect::<PyResult<Vec<_>>>();
-        Ok(PyTuple::new_bound(py, layers)
-            .into_any()
-            .iter()?
-            .unbind())
+        Ok(PyTuple::new_bound(py, layers).into_any().iter()?.unbind())
     }
 
     /// Return a set of non-conditional runs of "op" nodes with the given names.
